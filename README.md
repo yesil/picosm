@@ -1,4 +1,4 @@
-# Pico State Manager
+# Pico State Manager 🎷
 
 Live demo: https://yesil.github.io/picosm
 
