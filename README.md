@@ -12,10 +12,10 @@ Currently, the non minified bundle size is `4938 bytes` and is around `~1.2kb` g
 
 ## Partially Supported Features
 
-- `makeObservable` (instance level change detection)
-- `observe` (callback when the instance of an observable class changes)
-- `reaction` (react to specific changes)
-- `computed` (cache computed values)
+- `makeObservable`: generates a new class whose instances are observable
+- `observe`: callback when the instance of an observable class changes
+- `reaction`: react to specific changes
+- `computed`: cache computed values
 
 Also, an opinionated approach for tracking nested dependencies with `track/untrack` functions is added. If an observable wants to get notified by another one, these functions can be used.
 
