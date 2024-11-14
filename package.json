@@ -1,0 +1,40 @@
+{
+  "name": "picosm",
+  "version": "1.0.0",
+  "main": "dist/picosm.js",
+  "scripts": {
+    "test": "web-test-runner test/**/*.test.js --node-resolve",
+    "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch",
+    "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm && npx esbuild app/swc.js --bundle --outfile=./swc.js --format=esm --minify"
+  },
+  "type": "module",
+  "files": [
+    "src",
+    "dist"
+  ],
+  "keywords": [],
+  "author": "Ilyas Stéphne Türkben",
+  "license": "ISC",
+  "description": "Lightweight state manager that makes arbitrary classes observable",
+  "devDependencies": {
+    "@esm-bundle/chai": "^4.3.4-fix.0",
+    "@spectrum-web-components/badge": "^0.47.2",
+    "@spectrum-web-components/button": "^0.47.2",
+    "@spectrum-web-components/card": "^0.47.2",
+    "@spectrum-web-components/number-field": "^0.47.2",
+    "@spectrum-web-components/table": "^0.47.2",
+    "@spectrum-web-components/theme": "^0.47.2",
+    "@web/dev-server-esbuild": "^0.4.1",
+    "@web/test-runner": "^0.16.1",
+    "eslint": "^9.5.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.1.3",
+    "husky": "^9.0.11",
+    "lit": "^2.8.0",
+    "prettier": "^3.3.2",
+    "sinon": "^15.2.0"
+  },
+  "dependencies": {
+    "@spectrum-web-components/theme": "^1.0.1"
+  }
+}

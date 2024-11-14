@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Pico State Manager Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script type="importmap">
+      {
+        "imports": {
+          "lit": "https://cdn.jsdelivr.net/gh/lit/dist@2.8.0/all/lit-all.min.js"
+        }
+      }
+    </script>
+    <script src="swc.js"></script>
+    <script src="app/index.js" type="module"></script>
+    <style>
+      .project-link {
+        position: fixed;
+        bottom: 20px;
+      }
+
+      main {
+        display: flex;
+        justify-content: center;
+        margin-top: 10vh;
+        height: 90vh;
+        width: 100vw;
+        background-color: var(--spectrum-gray-200);
+      }
+    </style>
+  </head>
+
+  <body>
+    <main>
+      <sp-theme scale="large" color="dark">
+        <pico-demo></pico-demo>
+      </sp-theme>
+      <a class="project-link" href="https://github.com/yesil/picosm"
+        >Go to project page</a
+      >
+    </main>
+  </body>
+</html>
