@@ -17,11 +17,8 @@ Currently, the non minified bundle size is `4938 bytes` and is around `~1.2kb` g
 - `reaction`: react to specific changes
 - `computed`: cache computed values
 
-Also, an opinionated approach for tracking nested dependencies with `track/untrack` functions is added. If an observable wants to get notified by another one, these functions can be used.
-
-## Why Yet Another State Manager
-
-Libraries like Redux, Zustand, and Nanostores treat the state as a typeless object and require updating to the next version of the state manually. This results in verbose code with application logic scattered around in various functions, making it hard to understand.
+Also, an opinionated approach for tracking nested dependencies with `track/untrack` functions is added. <br>
+If an observable wants to get notified by another one, these functions can be used.
 
 ## How to Use
 
