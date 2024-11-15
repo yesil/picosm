@@ -28,7 +28,7 @@ Libraries like Redux, Zustand, and Nanostores treat the state as a typeless obje
 Add the picosm dependency
 
 ```bash
-npm add https://github.com/yesil/picosm/releases/download/v1.0.0/picosm-1.0.0.tgz
+npm add https://github.com/yesil/picosm/releases/download/v1.0.1/picosm-1.0.1.tgz
 ```
 
 See the demo app source code: https://github.com/yesil/picosm/tree/main/app
