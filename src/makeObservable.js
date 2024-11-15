@@ -33,12 +33,10 @@ function instrumentComputed(target, getterName) {
 
     descriptor.get = function () {
       if (this.__computedValues.has(getterName)) {
-        console.log('returning cached value', getterName);
         return this.__computedValues.get(getterName);
       }
       const cachedValue = originalGetter.call(this);
       this.__computedValues.set(getterName, cachedValue);
-      console.log('returning computed value', getterName);
       return cachedValue;
     };
 

@@ -14,30 +14,34 @@
     <script src="swc.js"></script>
     <script src="app/index.js" type="module"></script>
     <style>
-      .project-link {
-        position: fixed;
-        bottom: 20px;
+      html, body, main {
+        height: 100dvh;
+        margin: 0;
       }
 
+      sp-theme {
+        display: contents;
+      }
+
+      @media screen and (max-width: 600px) {
+        html, body, main {
+          height: auto;
+        }
+      }
+      
       main {
         display: flex;
-        justify-content: center;
-        margin-top: 10vh;
-        height: 90vh;
-        width: 100vw;
+        align-items: center;
         background-color: var(--spectrum-gray-200);
+        flex-direction: column;
       }
     </style>
   </head>
 
   <body>
-    <main>
-      <sp-theme scale="large" color="dark">
+    <sp-theme scale="large" color="dark">
+      <main>
         <pico-demo></pico-demo>
-      </sp-theme>
-      <a class="project-link" href="https://github.com/yesil/picosm"
-        >Go to project page</a
-      >
-    </main>
-  </body>
+      </main>
+    </sp-theme>
 </html>

@@ -16,26 +16,33 @@ export class App extends LitElement {
       :host {
         display: flex;
         flex-direction: column;
-        padding: 32px;
-        background-color: var(--spectrum-global-color-gray-100);
         color: var(--spectrum-global-color-gray-900);
+        margin-top: 32px;
+        min-width: 300px;
       }
 
       .cards {
         display: flex;
         justify-content: space-between;
         flex: 1;
+        gap: 32px;
       }
 
-      [slot="footer"] {
+      @media screen and (max-width: 600px) {
+        .cards {
+          flex-direction: column;
+          align-items: center;
+        }
+      }
+
+      [slot='footer'] {
         display: flex;
-        gap: 20px;
+        gap: 32px;
         align-items: center;
       }
 
       .cart {
         margin-top: 40px;
-        width: 800px;
       }
 
       sp-card {
@@ -164,6 +171,9 @@ export class App extends LitElement {
           <sp-badge variant="negative">${this.lastProductTitle}&nbsp;</sp-badge>
         </div>
       </div>
+      <a class="project-link" href="https://github.com/yesil/picosm"
+        >Go to project page</a
+      >
     `;
   }
 }
