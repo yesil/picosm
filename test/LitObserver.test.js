@@ -36,6 +36,8 @@ describe('LitOserver', () => {
     await helloWorld.updateComplete;
     expect(helloWorld.shadowRoot.textContent).to.equal('Hello, World!');
     helloWorld.user = new UserObservable();
+    await helloWorld.updateComplete;
+    expect(helloWorld.shadowRoot.textContent).to.equal('Hello, John !');
     helloWorld.user.setLastName('Doe');
     await helloWorld.updateComplete;
     expect(helloWorld.shadowRoot.textContent).to.equal('Hello, John Doe!');

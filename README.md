@@ -25,10 +25,11 @@ If an observable wants to get notified by another one, these functions can be us
 Add the picosm dependency
 
 ```bash
-npm add https://github.com/yesil/picosm/releases/download/v1.0.1/picosm-1.0.1.tgz
+npm add https://github.com/yesil/picosm/releases/download/v1.0.2/picosm-1.0.2.tgz
 ```
 
-See the demo app source code: https://github.com/yesil/picosm/tree/main/app
+See the unit test: https://github.com/yesil/picosm/blob/main/test/LitObserver.test.js <br>
+See the demo app source code: https://github.com/yesil/picosm/tree/main/app for a more comprehensive example.
 
 ## Contributing
 
