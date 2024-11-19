@@ -119,23 +119,23 @@ function untrack(target, source) {
 }
 
 // src/LitObserver.js
-function makeObserver(constructor, properties) {
+function litObserver(constructor, properties) {
   return class LitObserver extends constructor {
+    #observables = /* @__PURE__ */ new Set();
+    #disposers = /* @__PURE__ */ new Set();
     constructor(...args) {
       super(...args);
-      this.observables = /* @__PURE__ */ new Set();
-      this.disposers = /* @__PURE__ */ new Set();
     }
     trackProperties() {
       properties.forEach((property) => {
         const observable = this[property];
         if (!observable?.__observers)
           return;
-        if (this.observables.has(observable)) {
+        if (this.#observables.has(observable)) {
           return;
         }
-        this.observables.add(observable);
-        observe(observable, this.requestUpdate.bind(this));
+        this.#observables.add(observable);
+        this.#disposers.add(observe(observable, this.requestUpdate.bind(this)));
       });
     }
     update(changedProperties) {
@@ -144,22 +144,23 @@ function makeObserver(constructor, properties) {
     }
     connectedCallback() {
       super.connectedCallback();
-      this.observables.forEach((o) => {
-        observe(o, this.requestUpdate.bind(this));
+      this.#observables.forEach((o) => {
+        this.#disposers.add(observe(o, this.requestUpdate.bind(this)));
       });
     }
     disconnectedCallback() {
       super.disconnectedCallback();
-      this.disposers.forEach((disposer) => {
+      this.#disposers.forEach((disposer) => {
         disposer();
       });
-      this.disposers.clear();
+      this.#disposers.clear();
+      console.log(this.#disposers.size);
     }
   };
 }
 export {
+  litObserver,
   makeObservable,
-  makeObserver,
   observe,
   reaction,
   track,

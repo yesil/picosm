@@ -1,22 +1,22 @@
 import { observe } from './makeObservable.js';
 
-export function makeObserver(constructor, properties) {
+export function litObserver(constructor, properties) {
   return class LitObserver extends constructor {
+    #observables = new Set();
+    #disposers = new Set();
     constructor(...args) {
       super(...args);
-      this.observables = new Set();
-      this.disposers = new Set();
     }
 
     trackProperties() {
       properties.forEach((property) => {
         const observable = this[property];
         if (!observable?.__observers) return;
-        if (this.observables.has(observable)) {
+        if (this.#observables.has(observable)) {
           return;
         }
-        this.observables.add(observable);
-        observe(observable, this.requestUpdate.bind(this));
+        this.#observables.add(observable);
+        this.#disposers.add(observe(observable, this.requestUpdate.bind(this)));
       });
     }
 
@@ -27,17 +27,18 @@ export function makeObserver(constructor, properties) {
 
     connectedCallback() {
       super.connectedCallback();
-      this.observables.forEach((o) => {
-        observe(o, this.requestUpdate.bind(this));
+      this.#observables.forEach((o) => {
+        this.#disposers.add(observe(o, this.requestUpdate.bind(this)));
       });
     }
 
     disconnectedCallback() {
       super.disconnectedCallback();
-      this.disposers.forEach((disposer) => {
+      this.#disposers.forEach((disposer) => {
         disposer();
       });
-      this.disposers.clear();
+      this.#disposers.clear();
+      console.log(this.#disposers.size);
     }
   };
 }
