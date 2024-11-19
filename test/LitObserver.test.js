@@ -1,7 +1,5 @@
-import { fake } from 'sinon';
 import { expect } from '@esm-bundle/chai';
-import { makeObservable, observe } from '../src/makeObservable.js';
-import TestStore from './TestStore.js';
+import { makeObservable } from '../src/makeObservable.js';
 import { html, LitElement } from 'lit';
 import { litObserver } from '../src/LitObserver.js';
 
