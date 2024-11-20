@@ -15,7 +15,7 @@ class User {
   }
 }
 
-const UserObservable = makeObservable(User, ['setLastName', ['name']]);
+const UserObservable = makeObservable(User, ['setLastName'], ['name']);
 
 class HelloWorld extends LitElement {
   static properties = {
