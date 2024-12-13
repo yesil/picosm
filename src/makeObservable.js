@@ -32,11 +32,11 @@ function instrumentComputed(target, getterName) {
     const originalGetter = descriptor.get;
 
     descriptor.get = function () {
-      if (this.__computedValues.has(getterName)) {
-        return this.__computedValues.get(getterName);
+      if (this.__computedProperties.has(getterName)) {
+        return this.__computedProperties.get(getterName);
       }
       const cachedValue = originalGetter.call(this);
-      this.__computedValues.set(getterName, cachedValue);
+      this.__computedProperties.set(getterName, cachedValue);
       return cachedValue;
     };
 
@@ -52,25 +52,25 @@ export function makeObservable(constructor, actions = [], computeds = []) {
         this,
         {
           __observers: { value: new Set() },
-          __computedValues: { value: new Map() },
+          __computedProperties: { value: new Map() },
           __dependencies: { value: new WeakMap() },
         },
         {
           __observers: { enumerable: false, writable: false },
-          __computedValues: { enumerable: false, writable: false },
+          __computedProperties: { enumerable: false, writable: false },
           __dependencies: { enumerable: false, writable: false },
         },
       );
     }
 
     __notifyListeners() {
-      this.__observers.forEach((listener) => {
+      this.__observers?.forEach((listener) => {
         listener();
       });
     }
 
     __resetComputedProperties() {
-      this.__computedValues.clear();
+      this.__computedProperties?.clear();
     }
 
     __observe(callback) {
