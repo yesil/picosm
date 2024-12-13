@@ -1,7 +1,7 @@
-import { observe } from './makeObservable.js';
+import { observe, observeSlow } from './makeObservable.js';
 
 export function litObserver(constructor, properties) {
-  return class LitObserver extends constructor {
+  class LitObserver extends constructor {
     #observables = new Set();
     #disposers = new Set();
     constructor(...args) {
@@ -10,25 +10,36 @@ export function litObserver(constructor, properties) {
 
     trackProperties() {
       properties.forEach((property) => {
-        const observable = this[property];
-        if (!observable?.__observers) return;
-        if (this.#observables.has(observable)) {
+        let observableProperty;
+        let delay;
+        let observeFn = observe;
+        if (Array.isArray(property)) {
+          observableProperty = this[property[0]];
+          delay = property[1];
+          observeFn = observeSlow(delay);
+        } else {
+          observableProperty = this[property];
+        }
+        if (!observableProperty?.__observers) return;
+        if (this.#observables.has(observableProperty)) {
           return;
         }
-        this.#observables.add(observable);
-        this.#disposers.add(observe(observable, this.requestUpdate.bind(this)));
+        this.#observables.add(observableProperty);
+        this.#disposers.add(
+          observeFn(observableProperty, this.requestUpdate.bind(this)),
+        );
       });
     }
 
-    update(changedProperties) {
-      super.update(changedProperties);
+    updated(changedProperties) {
+      super.updated(changedProperties);
       this.trackProperties();
     }
 
     connectedCallback() {
       super.connectedCallback();
       this.#observables.forEach((o) => {
-        this.#disposers.add(observe(o, this.requestUpdate.bind(this)));
+        this.#disposers.add(observeFn(o, this.requestUpdate.bind(this)));
       });
     }
 
@@ -38,7 +49,7 @@ export function litObserver(constructor, properties) {
         disposer();
       });
       this.#disposers.clear();
-      console.log(this.#disposers.size);
     }
-  };
+  }
+  return eval(`(class ${constructor.name} extends LitObserver {})`);
 }

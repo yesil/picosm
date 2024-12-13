@@ -27,6 +27,19 @@ class HelloWorld extends LitElement {
 }
 customElements.define('hello-world', litObserver(HelloWorld, ['user']));
 
+class HelloWorldSlow extends LitElement {
+  static properties = {
+    user: { type: Object },
+  };
+  render() {
+    return html`<p>Hello, ${this.user?.name ?? 'World'}!</p>`;
+  }
+}
+customElements.define(
+  'hello-world-slow',
+  litObserver(HelloWorld, [['user', 1000]]),
+);
+
 describe('LitOserver', () => {
   it('should dispose observer', async () => {
     const helloWorld = document.createElement('hello-world');
@@ -39,5 +52,20 @@ describe('LitOserver', () => {
     helloWorld.user.setLastName('Doe');
     await helloWorld.updateComplete;
     expect(helloWorld.shadowRoot.textContent).to.equal('Hello, John Doe!');
+  });
+
+  it('should support slow observing', async () => {
+    const helloWorldSlow = document.createElement('hello-world-slow');
+    document.body.appendChild(helloWorldSlow);
+    await helloWorldSlow.updateComplete;
+    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, World!');
+    helloWorldSlow.user = new UserObservable();
+    await helloWorldSlow.updateComplete;
+    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John !');
+    helloWorldSlow.user.setLastName('Doe');
+    await helloWorldSlow.updateComplete;
+    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John !');
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John Doe!');
   });
 });

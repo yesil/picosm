@@ -48,9 +48,19 @@ export function makeObservable(constructor, actions = [], computeds = []) {
   class SuperClass extends constructor {
     constructor(...args) {
       super(...args);
-      this.__observers = new Set();
-      this.__computedValues = new Map();
-      this.__dependencies = new WeakMap();
+      Object.defineProperties(
+        this,
+        {
+          __observers: { value: new Set() },
+          __computedValues: { value: new Map() },
+          __dependencies: { value: new WeakMap() },
+        },
+        {
+          __observers: { enumerable: false, writable: false },
+          __computedValues: { enumerable: false, writable: false },
+          __dependencies: { enumerable: false, writable: false },
+        },
+      );
     }
 
     __notifyListeners() {
@@ -82,4 +92,15 @@ export function makeObservable(constructor, actions = [], computeds = []) {
 
 export function observe(target, callback) {
   return target.__observe(callback);
+}
+
+export function observeSlow(timeout) {
+  return (target, callback) => {
+    let timer;
+    const listener = () => {
+      clearTimeout(timer);
+      timer = setTimeout(callback, timeout);
+    };
+    return target.__observe(listener);
+  };
 }

@@ -38,13 +38,23 @@ function instrumentComputed(target, getterName) {
     Object.defineProperty(prototype, getterName, descriptor);
   }
 }
-function makeObservable(constructor, actions = [], computeds = []) {
-  class SuperClass extends constructor {
+function makeObservable(constructor2, actions = [], computeds = []) {
+  class SuperClass extends constructor2 {
     constructor(...args) {
       super(...args);
-      this.__observers = /* @__PURE__ */ new Set();
-      this.__computedValues = /* @__PURE__ */ new Map();
-      this.__dependencies = /* @__PURE__ */ new WeakMap();
+      Object.defineProperties(
+        this,
+        {
+          __observers: { value: /* @__PURE__ */ new Set() },
+          __computedValues: { value: /* @__PURE__ */ new Map() },
+          __dependencies: { value: /* @__PURE__ */ new WeakMap() }
+        },
+        {
+          __observers: { enumerable: false, writable: false },
+          __computedValues: { enumerable: false, writable: false },
+          __dependencies: { enumerable: false, writable: false }
+        }
+      );
     }
     __notifyListeners() {
       this.__observers.forEach((listener) => {
@@ -71,6 +81,16 @@ function makeObservable(constructor, actions = [], computeds = []) {
 }
 function observe(target, callback) {
   return target.__observe(callback);
+}
+function observeSlow(timeout) {
+  return (target, callback) => {
+    let timer;
+    const listener = () => {
+      clearTimeout(timer);
+      timer = setTimeout(callback, timeout);
+    };
+    return target.__observe(listener);
+  };
 }
 
 // src/reaction.js
@@ -120,7 +140,7 @@ function untrack(target, source) {
 
 // src/LitObserver.js
 function litObserver(constructor, properties) {
-  return class LitObserver extends constructor {
+  class LitObserver extends constructor {
     #observables = /* @__PURE__ */ new Set();
     #disposers = /* @__PURE__ */ new Set();
     constructor(...args) {
@@ -128,24 +148,35 @@ function litObserver(constructor, properties) {
     }
     trackProperties() {
       properties.forEach((property) => {
-        const observable = this[property];
-        if (!observable?.__observers)
+        let observableProperty;
+        let delay;
+        let observeFn2 = observe;
+        if (Array.isArray(property)) {
+          observableProperty = this[property[0]];
+          delay = property[1];
+          observeFn2 = observeSlow(delay);
+        } else {
+          observableProperty = this[property];
+        }
+        if (!observableProperty?.__observers)
           return;
-        if (this.#observables.has(observable)) {
+        if (this.#observables.has(observableProperty)) {
           return;
         }
-        this.#observables.add(observable);
-        this.#disposers.add(observe(observable, this.requestUpdate.bind(this)));
+        this.#observables.add(observableProperty);
+        this.#disposers.add(
+          observeFn2(observableProperty, this.requestUpdate.bind(this))
+        );
       });
     }
-    update(changedProperties) {
-      super.update(changedProperties);
+    updated(changedProperties) {
+      super.updated(changedProperties);
       this.trackProperties();
     }
     connectedCallback() {
       super.connectedCallback();
       this.#observables.forEach((o) => {
-        this.#disposers.add(observe(o, this.requestUpdate.bind(this)));
+        this.#disposers.add(observeFn(o, this.requestUpdate.bind(this)));
       });
     }
     disconnectedCallback() {
@@ -154,14 +185,15 @@ function litObserver(constructor, properties) {
         disposer();
       });
       this.#disposers.clear();
-      console.log(this.#disposers.size);
     }
-  };
+  }
+  return eval(`(class ${constructor.name} extends LitObserver {})`);
 }
 export {
   litObserver,
   makeObservable,
   observe,
+  observeSlow,
   reaction,
   track,
   untrack
