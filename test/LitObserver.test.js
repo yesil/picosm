@@ -27,15 +27,6 @@ class HelloWorld extends LitElement {
   }
 }
 customElements.define('hello-world', litObserver(HelloWorld, ['user']));
-
-class HelloWorldSlow extends LitElement {
-  static properties = {
-    user: { type: Object },
-  };
-  render() {
-    return html`<p>Hello, ${this.user?.name ?? 'World'}!</p>`;
-  }
-}
 customElements.define(
   'hello-world-slow',
   litObserver(HelloWorld, [['user', 500]]),
