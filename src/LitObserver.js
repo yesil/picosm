@@ -1,4 +1,4 @@
-import { observe, observeSlow } from './makeObservable.js';
+import { observe } from './makeObservable.js';
 
 export function litObserver(constructor, properties) {
   class LitObserver extends constructor {
@@ -12,21 +12,19 @@ export function litObserver(constructor, properties) {
       properties.forEach((property) => {
         let observableProperty;
         let delay;
-        let observeFn = observe;
         if (Array.isArray(property)) {
           observableProperty = this[property[0]];
           delay = property[1];
-          observeFn = observeSlow(delay);
         } else {
           observableProperty = this[property];
         }
-        if (!observableProperty?.__observers) return;
         if (this.#observables.has(observableProperty)) {
           return;
         }
+        if (!observableProperty) return;
         this.#observables.add(observableProperty);
         this.#disposers.add(
-          observeFn(observableProperty, this.requestUpdate.bind(this)),
+          observe(observableProperty, this.requestUpdate.bind(this), delay),
         );
       });
     }
@@ -34,13 +32,6 @@ export function litObserver(constructor, properties) {
     updated(changedProperties) {
       super.updated(changedProperties);
       this.trackProperties();
-    }
-
-    connectedCallback() {
-      super.connectedCallback();
-      this.#observables.forEach((o) => {
-        this.#disposers.add(observeFn(o, this.requestUpdate.bind(this)));
-      });
     }
 
     disconnectedCallback() {

@@ -8,14 +8,14 @@ function instrumentAction(target, methodName) {
       descriptor.value = async function (...args) {
         const response = await originalMethod.call(this, ...args);
         this.__resetComputedProperties();
-        this.__notifyListeners();
+        this.__notifyObservers();
         return response;
       };
     } else {
       descriptor.value = function (...args) {
         const response = originalMethod.call(this, ...args);
         this.__resetComputedProperties();
-        this.__notifyListeners();
+        this.__notifyObservers();
         return response;
       };
     }
@@ -32,6 +32,17 @@ function instrumentComputed(target, getterName) {
     const originalGetter = descriptor.get;
 
     descriptor.get = function () {
+      if (!this.__computedProperties) {
+        Object.defineProperties(
+          this,
+          {
+            __computedProperties: { value: new Map() },
+          },
+          {
+            __computedProperties: { enumerable: false, writable: false },
+          },
+        );
+      }
       if (this.__computedProperties.has(getterName)) {
         return this.__computedProperties.get(getterName);
       }
@@ -46,24 +57,7 @@ function instrumentComputed(target, getterName) {
 
 export function makeObservable(constructor, actions = [], computeds = []) {
   class SuperClass extends constructor {
-    constructor(...args) {
-      super(...args);
-      Object.defineProperties(
-        this,
-        {
-          __observers: { value: new Set() },
-          __computedProperties: { value: new Map() },
-          __dependencies: { value: new WeakMap() },
-        },
-        {
-          __observers: { enumerable: false, writable: false },
-          __computedProperties: { enumerable: false, writable: false },
-          __dependencies: { enumerable: false, writable: false },
-        },
-      );
-    }
-
-    __notifyListeners() {
+    __notifyObservers() {
       this.__observers?.forEach((listener) => {
         listener();
       });
@@ -74,6 +68,17 @@ export function makeObservable(constructor, actions = [], computeds = []) {
     }
 
     __observe(callback) {
+      if (!this.__observers) {
+        Object.defineProperties(
+          this,
+          {
+            __observers: { value: new Set() },
+          },
+          {
+            __observers: { enumerable: false, writable: false },
+          },
+        );
+      }
       this.__observers.add(callback);
       return () => {
         this.__observers.delete(callback);
@@ -90,17 +95,19 @@ export function makeObservable(constructor, actions = [], computeds = []) {
   return SuperClass;
 }
 
-export function observe(target, callback) {
-  return target.__observe(callback);
+function observeSlow(target, callback, timeout) {
+  let timer;
+  const listener = () => {
+    clearTimeout(timer);
+    timer = setTimeout(callback, timeout);
+  };
+  return target.__observe(listener);
 }
 
-export function observeSlow(timeout) {
-  return (target, callback) => {
-    let timer;
-    const listener = () => {
-      clearTimeout(timer);
-      timer = setTimeout(callback, timeout);
-    };
-    return target.__observe(listener);
-  };
+export function observe(target, callback, timeout) {
+  if (timeout) {
+    return observeSlow(target, callback, timeout);
+  } else {
+    return target.__observe(callback);
+  }
 }

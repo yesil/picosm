@@ -17,7 +17,7 @@ Currently, the non minified bundle size is `4938 bytes` and is around `~1.2kb` g
 - `reaction`: react to specific changes
 - `computed`: cache computed values
 
-Also, an opinionated approach for tracking nested dependencies with `track/untrack` functions is added. <br>
+Also, an opinionated approach for tracking nested dependencies with `track` functions is added. <br>
 If an observable wants to get notified by another one, these functions can be used.
 
 ## How to Use

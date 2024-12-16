@@ -1,6 +1,7 @@
-import { track, untrack } from '../src/track.js';
+import { track } from '../src/track.js';
 
 export default class TestStore {
+  #disposer;
   constructor() {
     this.checked = false;
     this._counter = 0;
@@ -28,11 +29,11 @@ export default class TestStore {
 
   set test(test) {
     if (this._test) {
-      untrack(this, this._test);
+      this.#disposer?.();
     }
     this._test = test;
     if (test) {
-      track(this, test);
+      this.#disposer = track(this, test);
     }
   }
 

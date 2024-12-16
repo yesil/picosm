@@ -8,14 +8,14 @@ function instrumentAction(target, methodName) {
       descriptor.value = async function(...args) {
         const response = await originalMethod.call(this, ...args);
         this.__resetComputedProperties();
-        this.__notifyListeners();
+        this.__notifyObservers();
         return response;
       };
     } else {
       descriptor.value = function(...args) {
         const response = originalMethod.call(this, ...args);
         this.__resetComputedProperties();
-        this.__notifyListeners();
+        this.__notifyObservers();
         return response;
       };
     }
@@ -28,11 +28,22 @@ function instrumentComputed(target, getterName) {
   if (descriptor && typeof descriptor.get === "function") {
     const originalGetter = descriptor.get;
     descriptor.get = function() {
-      if (this.__computedValues.has(getterName)) {
-        return this.__computedValues.get(getterName);
+      if (!this.__computedProperties) {
+        Object.defineProperties(
+          this,
+          {
+            __computedProperties: { value: /* @__PURE__ */ new Map() }
+          },
+          {
+            __computedProperties: { enumerable: false, writable: false }
+          }
+        );
+      }
+      if (this.__computedProperties.has(getterName)) {
+        return this.__computedProperties.get(getterName);
       }
       const cachedValue = originalGetter.call(this);
-      this.__computedValues.set(getterName, cachedValue);
+      this.__computedProperties.set(getterName, cachedValue);
       return cachedValue;
     };
     Object.defineProperty(prototype, getterName, descriptor);
@@ -40,31 +51,26 @@ function instrumentComputed(target, getterName) {
 }
 function makeObservable(constructor2, actions = [], computeds = []) {
   class SuperClass extends constructor2 {
-    constructor(...args) {
-      super(...args);
-      Object.defineProperties(
-        this,
-        {
-          __observers: { value: /* @__PURE__ */ new Set() },
-          __computedValues: { value: /* @__PURE__ */ new Map() },
-          __dependencies: { value: /* @__PURE__ */ new WeakMap() }
-        },
-        {
-          __observers: { enumerable: false, writable: false },
-          __computedValues: { enumerable: false, writable: false },
-          __dependencies: { enumerable: false, writable: false }
-        }
-      );
-    }
-    __notifyListeners() {
-      this.__observers.forEach((listener) => {
+    __notifyObservers() {
+      this.__observers?.forEach((listener) => {
         listener();
       });
     }
     __resetComputedProperties() {
-      this.__computedValues.clear();
+      this.__computedProperties?.clear();
     }
     __observe(callback) {
+      if (!this.__observers) {
+        Object.defineProperties(
+          this,
+          {
+            __observers: { value: /* @__PURE__ */ new Set() }
+          },
+          {
+            __observers: { enumerable: false, writable: false }
+          }
+        );
+      }
       this.__observers.add(callback);
       return () => {
         this.__observers.delete(callback);
@@ -79,63 +85,55 @@ function makeObservable(constructor2, actions = [], computeds = []) {
   });
   return SuperClass;
 }
-function observe(target, callback) {
-  return target.__observe(callback);
-}
-function observeSlow(timeout) {
-  return (target, callback) => {
-    let timer;
-    const listener = () => {
-      clearTimeout(timer);
-      timer = setTimeout(callback, timeout);
-    };
-    return target.__observe(listener);
+function observeSlow(target, callback, timeout) {
+  let timer;
+  const listener = () => {
+    clearTimeout(timer);
+    timer = setTimeout(callback, timeout);
   };
+  return target.__observe(listener);
+}
+function observe(target, callback, timeout) {
+  if (timeout) {
+    return observeSlow(target, callback, timeout);
+  } else {
+    return target.__observe(callback);
+  }
 }
 
 // src/reaction.js
-function reaction(target, callback, execute) {
+function reaction(target, callback, execute, timeout) {
   let lastProps = [];
-  return target.__observe(async () => {
-    const props = callback(target);
-    if (lastProps === props)
-      return;
-    let shouldExecute = false;
-    for (let i = 0; i < props.length; i++) {
-      if (lastProps[i] !== props[i]) {
-        shouldExecute = true;
-        break;
+  return observe(
+    target,
+    async () => {
+      const props = callback(target);
+      if (lastProps === props)
+        return;
+      let shouldExecute = false;
+      for (let i = 0; i < props.length; i++) {
+        if (lastProps[i] !== props[i]) {
+          shouldExecute = true;
+          break;
+        }
       }
-    }
-    if (shouldExecute) {
-      lastProps = props;
-      execute(...props);
-    }
-  });
+      if (shouldExecute) {
+        lastProps = props;
+        execute(...props);
+      }
+    },
+    timeout
+  );
 }
 
 // src/track.js
 function track(target, source) {
-  if (!target.__observers || !source?.__observers)
-    return;
-  const disposer = source.__observe(() => {
+  const disposer = source.__observe?.(() => {
     target.__resetComputedProperties();
-    target.__notifyListeners();
+    target.__notifyObservers();
   });
-  target.__dependencies.set(source, disposer);
   target.__resetComputedProperties();
-  target.__notifyListeners();
-}
-function untrack(target, source) {
-  if (!target.__observers || !source?.__observers)
-    return;
-  const disposer = target.__dependencies.get(source);
-  if (disposer) {
-    target.__dependencies.delete(source);
-    disposer();
-    target.__resetComputedProperties();
-    target.__notifyListeners();
-  }
+  target.__notifyObservers();
 }
 
 // src/LitObserver.js
@@ -150,34 +148,26 @@ function litObserver(constructor, properties) {
       properties.forEach((property) => {
         let observableProperty;
         let delay;
-        let observeFn2 = observe;
         if (Array.isArray(property)) {
           observableProperty = this[property[0]];
           delay = property[1];
-          observeFn2 = observeSlow(delay);
         } else {
           observableProperty = this[property];
         }
-        if (!observableProperty?.__observers)
-          return;
         if (this.#observables.has(observableProperty)) {
           return;
         }
+        if (!observableProperty)
+          return;
         this.#observables.add(observableProperty);
         this.#disposers.add(
-          observeFn2(observableProperty, this.requestUpdate.bind(this))
+          observe(observableProperty, this.requestUpdate.bind(this), delay)
         );
       });
     }
     updated(changedProperties) {
       super.updated(changedProperties);
       this.trackProperties();
-    }
-    connectedCallback() {
-      super.connectedCallback();
-      this.#observables.forEach((o) => {
-        this.#disposers.add(observeFn(o, this.requestUpdate.bind(this)));
-      });
     }
     disconnectedCallback() {
       super.disconnectedCallback();
@@ -193,8 +183,6 @@ export {
   litObserver,
   makeObservable,
   observe,
-  observeSlow,
   reaction,
-  track,
-  untrack
+  track
 };

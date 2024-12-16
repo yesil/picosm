@@ -6,6 +6,7 @@ import { litObserver } from '../src/LitObserver.js';
 class User {
   firstName = 'John';
   lastName = '';
+
   setLastName(name) {
     this.lastName = name;
   }
@@ -37,7 +38,7 @@ class HelloWorldSlow extends LitElement {
 }
 customElements.define(
   'hello-world-slow',
-  litObserver(HelloWorld, [['user', 1000]]),
+  litObserver(HelloWorld, [['user', 500]]),
 );
 
 describe('LitOserver', () => {
@@ -65,7 +66,7 @@ describe('LitOserver', () => {
     helloWorldSlow.user.setLastName('Doe');
     await helloWorldSlow.updateComplete;
     expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John !');
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await new Promise((resolve) => setTimeout(resolve, 600));
     expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John Doe!');
   });
 });

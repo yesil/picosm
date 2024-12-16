@@ -11,12 +11,12 @@ describe('Pico State Manager', () => {
   );
 
   it('makes any class observable', () => {
-    expect(TestObservable.prototype.__notifyListeners).to.be.a('function');
+    expect(TestObservable.prototype.__notifyObservers).to.be.a('function');
     expect(TestObservable.prototype.__resetComputedProperties).to.be.a(
       'function',
     );
     expect(TestObservable.prototype.__observe).to.be.a('function');
-    expect(TestObservable.prototype.__notifyListeners).to.be.a('function');
+    expect(TestObservable.prototype.__notifyObservers).to.be.a('function');
   });
 
   it('caches computed values', () => {
