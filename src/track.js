@@ -5,4 +5,5 @@ export function track(target, source) {
   });
   target.__resetComputedProperties();
   target.__notifyObservers();
+  return disposer;
 }

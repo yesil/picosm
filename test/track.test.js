@@ -19,12 +19,12 @@ describe('Pico State Manager', function () {
     expect(test1.counter).to.equal(1);
     expect(test2.counter).to.equal(1);
 
-    test1.test = test2;
+    test1.connect(test2);
     test2.toggleCheck();
 
     expect(test1.counter).to.equal(3);
 
-    test1.test = undefined;
+    test1.connect();
     test2.toggleCheck();
   });
 });

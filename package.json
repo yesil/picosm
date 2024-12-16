@@ -1,6 +1,6 @@
 {
   "name": "picosm",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "dist/picosm.js",
   "scripts": {
     "test": "web-test-runner test/**/*.test.js --node-resolve",

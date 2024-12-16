@@ -84,6 +84,24 @@ export function makeObservable(constructor, actions = [], computeds = []) {
         this.__observers.delete(callback);
       };
     }
+
+    __subscribe(onMessageCallback) {
+      if (!this.__subscribers) {
+        Object.defineProperties(
+          this,
+          {
+            __subscribers: { value: new Set() },
+          },
+          {
+            __subscribers: { enumerable: false, writable: false },
+          },
+        );
+      }
+      this.__subscribers.add(onMessageCallback);
+      return () => {
+        this.__subscribers.delete(onMessageCallback);
+      };
+    }
   }
 
   actions.forEach((methodName) => {
@@ -110,4 +128,14 @@ export function observe(target, callback, timeout) {
   } else {
     return target.__observe(callback);
   }
+}
+
+export function subscribe(target, onMessageCallback) {
+  return target.__subscribe(onMessageCallback);
+}
+
+export function notify(target, message) {
+  target.__subscribers?.forEach((listener) => {
+    listener(message);
+  });
 }

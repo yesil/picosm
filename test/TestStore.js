@@ -2,38 +2,37 @@ import { track } from '../src/track.js';
 
 export default class TestStore {
   #disposer;
+  #connection;
+  #counter = 0;
+
   constructor() {
     this.checked = false;
-    this._counter = 0;
-    this._test = undefined;
   }
 
   toggleCheck() {
     this.checked = !this.checked;
-    this._counter++;
+    this.#counter++;
   }
 
   async toggleAsyncCheck() {
     await new Promise((resolve) =>
       setTimeout(() => {
         this.checked = !this.checked;
-        this._counter++;
+        this.#counter++;
         resolve(true);
       }, 100),
     );
   }
 
   get counter() {
-    return this._counter + (this._test ? this._test.counter : 0);
+    return this.#counter + (this.#connection ? this.#connection.counter : 0);
   }
 
-  set test(test) {
-    if (this._test) {
-      this.#disposer?.();
-    }
-    this._test = test;
-    if (test) {
-      this.#disposer = track(this, test);
+  connect(store) {
+    this.#disposer?.();
+    this.#connection = store;
+    if (store) {
+      this.#disposer = track(this, store);
     }
   }
 
