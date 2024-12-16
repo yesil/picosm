@@ -135,6 +135,7 @@ export function subscribe(target, onMessageCallback) {
 }
 
 export function notify(target, message) {
+  if (!this.__subscribers) return;
   target.__subscribers?.forEach((listener) => {
     listener(message);
   });
