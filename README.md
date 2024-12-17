@@ -18,9 +18,9 @@ You can also import only the specific modules you need from the source to furthe
 - `observe`: Callback when the instance of an observable class changes.
 - `reaction`: React to specific changes.
 - `track`: Tracks other observables and notifies own observers on change.
-- `subscribe`: Subscribe to changes in an observable.
-- `notify`: Notify all subscribers of changes.
-- `computed`: Cache computed values.
+- `subscribe`: Subscribe to arbitraty messages sent over an observable.
+- `notify`: Notify all subscribers of an observable with arbitrary messages.
+- `computed`: Cache computed values at the first access, and resets the cache on change
 
 ## How to Use
 
