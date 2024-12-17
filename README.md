@@ -12,7 +12,7 @@ Currently, the non-minified bundle size is `5992 bytes` and around `1536 bytes` 
 
 You can also import only the specific modules you need from the source to further reduce the size.
 
-## Partially Supported Features
+## Features
 
 - `makeObservable`: Generates a new class whose instances are observable.
 - `observe`: Callback when the instance of an observable class changes.
