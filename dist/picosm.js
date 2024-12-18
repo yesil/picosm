@@ -121,6 +121,8 @@ function subscribe(target, onMessageCallback) {
   return target.__subscribe(onMessageCallback);
 }
 function notify(target, message) {
+  if (!target.__subscribers)
+    return;
   target.__subscribers?.forEach((listener) => {
     listener(message);
   });
@@ -131,7 +133,7 @@ function reaction(target, callback, execute, timeout) {
   let lastProps = [];
   return observe(
     target,
-    async () => {
+    () => {
       const props = callback(target);
       if (lastProps === props)
         return;

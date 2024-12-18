@@ -4,7 +4,7 @@ export function reaction(target, callback, execute, timeout) {
   let lastProps = [];
   return observe(
     target,
-    async () => {
+    () => {
       const props = callback(target);
       if (lastProps === props) return;
       let shouldExecute = false;

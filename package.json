@@ -1,6 +1,6 @@
 {
   "name": "picosm",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "dist/picosm.js",
   "scripts": {
     "test": "web-test-runner test/**/*.test.js --node-resolve",
@@ -25,7 +25,7 @@
     "@spectrum-web-components/table": "^0.47.2",
     "@spectrum-web-components/theme": "^0.47.2",
     "@web/dev-server-esbuild": "^0.4.1",
-    "@web/test-runner": "^0.16.1",
+    "@web/test-runner": "^0.19.0",
     "eslint": "^9.5.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
