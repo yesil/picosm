@@ -39,11 +39,51 @@ See the demo app source code: https://github.com/yesil/picosm/tree/main/app for 
 
 Generates a new class whose instances are observable.
 
+#### Example
+
+```javascript
+import { makeObservable } from 'picosm';
+
+class Counter {
+  value = 0;
+  otherValue = 0;
+
+  increment() {
+    this.value += 1;
+  }
+
+  incrementOther() {
+    this.otherValue += 1;
+  }
+
+  get total() {
+    return this.value + this.otherValue;
+  }
+}
+
+const CounterObservable = makeObservable(Counter, ['increment', 'incrementOther']);
+const instance = new CounterObservable();
+instance.increment();
+console.log(instance.value); // 1
+```
+
 ### `observe`
 
 Creates an observer for a given observable.
 
 Returns a `disposer` function.
+
+#### Example
+
+```javascript
+import { observe } from 'picosm';
+
+const disposer = observe(instance, () => {
+  console.log('Instance changed');
+});
+instance.increment(); // Logs: 'Instance changed'
+disposer(); // Stops observing
+```
 
 ### `reaction`
 
@@ -51,39 +91,76 @@ React to specific changes.
 
 Returns a `disposer` function.
 
+#### Example
+
+```javascript
+import { reaction } from 'picosm';
+
+const disposer = reaction(
+  instance,
+  ({ value }) => [value],
+  (value) => {
+    console.log('Value changed to', value);
+  },
+);
+instance.increment(); // Logs: 'Value changed to 1'
+instance.incrementOther(); // nothing happens
+disposer(); // Stops reacting
+```
+
 ### `track`
 
 Tracks other observables and notifies own observers on change.
 
 Returns a `disposer` function.
 
-### `subscribe`
+#### Example
 
-An observable becomes automatically a subscription queue, where one can register several subscriptions for receiving arbitrary messages.
+```javascript
+import { track, observe } from 'picosm';
+
+const otherInstance = new CounterObservable();
+const disposer = track(instance, otherInstance); // notify instance when otherInstance changes
+
+const disposer = observe(instance, () => {
+  console.log('tracked dependency has changed', otherInstance);
+});
+otherInstance.increment();
+disposer();
+```
+
+### `subscribe & notify`
+
+#### subscribe
+Subscribe to arbitrary messages sent over an observable.
 
 Returns a `disposer` function.
 
+#### notify
+Notify all subscribers of an observable with arbitrary messages.
+
 #### Example
 
 ```javascript
-const disposer = subscribe(observableInstance, (message) => {
+import { subscribe, notify } from 'picosm';
+
+const disposer = subscribe(instance, (message) => {
   console.log('Message received', message);
 });
-```
-
-### `notify`
-
-Notify all subscribers of changes.
-
-#### Example
-
-```javascript
-notify(observableInstance, message);
+notify(instance, 'hello world');
+disposer(); // Stops subscribing
 ```
 
 ### `computed`
 
-Cache computed values.
+Cache computed values at the first access, and resets the cache on change.
+
+```javascript
+const CounterObservable = makeObservable(Counter, ['increment', 'incrementOther'], ['total']);
+```
+
+the total getter value will be computed only once until this observable changes.
+
 
 ## Contributing
 
