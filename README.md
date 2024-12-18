@@ -8,7 +8,7 @@ Pico State Manager is an experimental, lightweight, zero-dependency state manage
 
 It also provides a helper function to make Lit components observers and updates them on changes.
 
-Currently, the non-minified bundle size is `5992 bytes` and around `1536 bytes` gzipped.
+Currently, the non-minified bundle size is `6027 bytes` and around `1545 bytes` gzipped.
 
 You can also import only the specific modules you need from the source to further reduce the size.
 
