@@ -103,7 +103,6 @@ class Star {
     this.radius = radius;
     this.color = color;
     this.velocity = velocity;
-    this.stars = [];
     this.disposers = new Map();
     this.dragging = false;
     this.hover = false;
@@ -111,26 +110,18 @@ class Star {
   }
 
   canConnect(star) {
-    return this !== star && this.stars.every((s) => s.canConnect(star));
+    return (
+      this !== star && this.connections.every((c) => c.to.canConnect(star))
+    );
   }
 
   connect(star) {
     if (!star.canConnect(this)) return;
-    this.stars.push(star);
-    const disposer = track(this, star);
-    this.disposers.set(star, disposer);
-
     const connection = new Connection(this, star);
     this.connections.push(connection);
   }
 
   disconnect(star) {
-    this.stars = this.stars.filter((s) => s !== star);
-    const disposer = this.disposers.get(star);
-    if (disposer) disposer();
-    this.disposers.delete(star);
-
-    // Remove the corresponding connection
     this.connections = this.connections.filter((c) => c.to !== star);
   }
 
@@ -142,7 +133,9 @@ class Star {
         return 0;
       }
       visited.add(star);
-      return 1 + star.stars.reduce((acc, s) => acc + countStars(s), 0);
+      return (
+        1 + star.connections.reduce((acc, { to }) => acc + countStars(to), 0)
+      );
     };
 
     return countStars(this) - 1;
