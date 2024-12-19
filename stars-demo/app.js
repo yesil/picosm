@@ -110,7 +110,12 @@ class Star {
     this.connections = []; // store Connection objects
   }
 
+  canConnect(star) {
+    return this !== star && this.stars.every((s) => s.canConnect(star));
+  }
+
   connect(star) {
+    if (!star.canConnect(this)) return;
     this.stars.push(star);
     const disposer = track(this, star);
     this.disposers.set(star, disposer);
