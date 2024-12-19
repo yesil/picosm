@@ -127,18 +127,14 @@ class Star {
 
   get count() {
     const visited = new Set();
-
-    const countStars = (star) => {
-      if (visited.has(star)) {
-        return 0;
-      }
+    const visitConnections = (star) => {
       visited.add(star);
-      return (
-        1 + star.connections.reduce((acc, { to }) => acc + countStars(to), 0)
-      );
+      for (let c of star.connections) {
+        visitConnections(c.to);
+      }
     };
-
-    return countStars(this) - 1;
+    visitConnections(this);
+    return visited.size - 1;
   }
 
   draw(ctx) {
@@ -192,11 +188,7 @@ class Star {
   }
 }
 
-const StarObservable = makeObservable(
-  Star,
-  ['connect', 'disconnect'],
-  ['count'],
-);
+const StarObservable = makeObservable(Star, ['connect', 'disconnect'], []);
 
 // Ranking class to manage stars and their ranking display
 class Ranking {
