@@ -37,7 +37,7 @@ You can also import only the specific modules you need from the source to furthe
 Add the picosm dependency:
 
 ```bash
-npm add https://github.com/yesil/picosm/releases/download/v1.0.3/picosm-1.0.3.tgz
+npm add https://github.com/yesil/picosm/releases/download/v1.0.4/picosm-1.0.4.tgz
 ```
 
 See the unit test: https://github.com/yesil/picosm/blob/main/test/LitObserver.test.js <br>
