@@ -135,9 +135,17 @@ class Star {
   }
 
   get count() {
-    return (
-      this.stars.length + this.stars.reduce((acc, star) => acc + star.count, 0)
-    );
+    const visited = new Set();
+
+    const countStars = (star) => {
+      if (visited.has(star)) {
+        return 0;
+      }
+      visited.add(star);
+      return 1 + star.stars.reduce((acc, s) => acc + countStars(s), 0);
+    };
+
+    return countStars(this) - 1;
   }
 
   draw(ctx) {
