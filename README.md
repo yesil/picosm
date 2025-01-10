@@ -1,4 +1,4 @@
-# Pico State Manager 🎷
+# Pico State Manager ⭐️
 
 ## Demos
 
@@ -7,11 +7,8 @@ Shopping cart demo: (https://yesil.github.io/picosm/examples/cart/index.html)
 
 Canvas demo: (https://yesil.github.io/picosm/examples/stars/index.html)
 <br>
-
 In this demo, the ranking of stars with the most connection is updated using a debounced observer, and tracking connected stars.
 Use the metakey to connect stars to each other.
-
-![Pico State Manager](/examples/stars/stars-demo.png)
 
 ## Introduction
 
