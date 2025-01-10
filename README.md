@@ -59,7 +59,7 @@ Makes a class observable by adding reactive capabilities. The class should defin
 import { makeObservable } from 'picosm';
 
 class Counter {
-  static observableActions = ['increment', 'incrementOther'];
+  static observableActions = ['increment'];
   static computedProperties = ['total'];
 
   value = 0;
