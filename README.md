@@ -11,7 +11,7 @@ Canvas demo: (https://yesil.github.io/picosm/examples/stars/index.html)
 In this demo, the ranking of stars with the most connection is updated using a debounced observer, and tracking connected stars.
 Use the metakey to connect stars to each other.
 
-![Pico State Manager](stars-demo/stars-demo.png)
+![Pico State Manager](/examples/stars/stars-demo.png)
 
 ## Introduction
 
