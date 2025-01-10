@@ -1,9 +1,14 @@
 import { expect } from '@esm-bundle/chai';
 import { makeObservable } from '../src/makeObservable.js';
 import { html, LitElement } from 'lit';
-import { litObserver } from '../src/LitObserver.js';
+import { makeLitObserver } from '../src/makeLitObserver.js';
+
+const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
 
 class User {
+  static observableActions = ['setLastName'];
+  static computedProperties = ['name'];
+
   firstName = 'John';
   lastName = '';
 
@@ -16,21 +21,28 @@ class User {
   }
 }
 
-const UserObservable = makeObservable(User, ['setLastName'], ['name']);
+makeObservable(User);
 
 class HelloWorld extends LitElement {
   static properties = {
-    user: { type: Object },
+    user: { type: Object },  /* observe: true by default */
   };
   render() {
     return html`<p>Hello, ${this.user?.name ?? 'World'}!</p>`;
   }
 }
-customElements.define('hello-world', litObserver(HelloWorld, ['user']));
-customElements.define(
-  'hello-world-slow',
-  litObserver(HelloWorld, [['user', 500]]),
-);
+
+customElements.define('hello-world', makeLitObserver(HelloWorld));
+
+class HelloWorldSlow extends LitElement {
+  static properties = {
+    user: { type: Object, throttle: 200 },
+  };
+  render() {
+    return html`<p>Hello, ${this.user?.name ?? 'World'}!</p>`;
+  }
+}
+customElements.define('hello-world-slow', makeLitObserver(HelloWorldSlow));
 
 describe('LitOserver', () => {
   it('should dispose observer', async () => {
@@ -38,7 +50,7 @@ describe('LitOserver', () => {
     document.body.appendChild(helloWorld);
     await helloWorld.updateComplete;
     expect(helloWorld.shadowRoot.textContent).to.equal('Hello, World!');
-    helloWorld.user = new UserObservable();
+    helloWorld.user = new User();
     await helloWorld.updateComplete;
     expect(helloWorld.shadowRoot.textContent).to.equal('Hello, John !');
     helloWorld.user.setLastName('Doe');
@@ -51,13 +63,15 @@ describe('LitOserver', () => {
     document.body.appendChild(helloWorldSlow);
     await helloWorldSlow.updateComplete;
     expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, World!');
-    helloWorldSlow.user = new UserObservable();
+    helloWorldSlow.user = new User();
     await helloWorldSlow.updateComplete;
-    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John !');
+    helloWorldSlow.user.setLastName('D');
+    await helloWorldSlow.updateComplete;
+    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John D!');
     helloWorldSlow.user.setLastName('Doe');
     await helloWorldSlow.updateComplete;
-    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John !');
-    await new Promise((resolve) => setTimeout(resolve, 600));
+    expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John D!');
+    await wait(200);
     expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John Doe!');
   });
 });

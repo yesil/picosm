@@ -1,17 +1,10 @@
 import { expect } from '@esm-bundle/chai';
-import { makeObservable } from '../src/makeObservable.js';
 import TestStore from './TestStore.js';
 
 describe('Pico State Manager', function () {
-  const TestObservable = makeObservable(
-    TestStore,
-    ['toggleCheck'],
-    ['random', 'counter'],
-  );
-
   it('provides track/untrack function', function () {
-    const test1 = new TestObservable();
-    const test2 = new TestObservable();
+    const test1 = new TestStore();
+    const test2 = new TestStore();
 
     test1.toggleCheck();
     test2.toggleCheck();

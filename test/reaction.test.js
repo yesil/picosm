@@ -1,14 +1,12 @@
 import { spy } from 'sinon';
 import { expect } from '@esm-bundle/chai';
-import { makeObservable } from '../src/makeObservable.js';
 import { reaction } from '../src/reaction.js';
 import TestStore from './TestStore.js';
 
 describe('Pico State Manager', () => {
-  const TestObservable = makeObservable(TestStore, ['toggleCheck'], ['random']);
 
   it('provides reaction function', () => {
-    const observable = new TestObservable();
+    const observable = new TestStore();
     const execute = spy((mode5, counter) => {
       if (mode5) {
         console.log(counter, 'is divisible by 5');

@@ -1,6 +1,10 @@
-import { makeObservable } from '../dist/picosm.js';
+import { makeObservable } from '../../dist/picosm.js';
 
 class Product {
+
+  static observableActions = ['setQuantity'];
+  static computedProperties = ['total'];
+
   title = '';
   price = 0;
   quantity = 0;
@@ -18,8 +22,12 @@ class Product {
     this.quantity = quantity;
   }
 }
+makeObservable(Product);
 
 class Store {
+  static observableActions = ['setProducts', 'addToCart', 'updateQuantity'];
+  static computedProperties = ['total'];
+
   setProducts(products) {
     this.products = products;
   }
@@ -43,11 +51,7 @@ class Store {
   }
 }
 
-const ProductObservable = makeObservable(Product, ['setQuantity'], ['total']);
-const StoreObservable = makeObservable(
-  Store,
-  ['setProducts', 'addToCart', 'updateQuantity'],
-  ['total'],
-);
+makeObservable(Store);
 
-export { Product, ProductObservable, Store, StoreObservable };
+
+export { Product, Store };

@@ -1,3 +1,4 @@
+import { makeObservable } from '../src/makeObservable.js';
 import { track } from '../src/track.js';
 
 export default class TestStore {
@@ -5,8 +6,20 @@ export default class TestStore {
   #connection;
   #counter = 0;
 
+  static observableActions = ['toggleCheck', 'toggleAsyncCheck'];
+  static computedProperties = ['random'];
+
   constructor() {
     this.checked = false;
+  }
+
+  get counter() {
+    return this.#counter + (this.#connection ? this.#connection.counter : 0);
+  }
+
+  get random() {
+    const value = Math.floor(Math.random() * 100);
+    return `${this.checked ? 'checked' : 'unchecked'} ${value}`;
   }
 
   toggleCheck() {
@@ -24,10 +37,6 @@ export default class TestStore {
     );
   }
 
-  get counter() {
-    return this.#counter + (this.#connection ? this.#connection.counter : 0);
-  }
-
   connect(store) {
     this.#disposer?.();
     this.#connection = store;
@@ -35,9 +44,6 @@ export default class TestStore {
       this.#disposer = track(this, store);
     }
   }
-
-  get random() {
-    const value = Math.floor(Math.random() * 100);
-    return `${this.checked ? 'checked' : 'unchecked'} ${value}`;
-  }
 }
+
+makeObservable(TestStore);

@@ -1,43 +1,33 @@
 // src/makeObservable.js
-function instrumentAction(target, methodName) {
-  const prototype = Object.getPrototypeOf(target).prototype;
+function instrumentAction(prototype, methodName) {
   const descriptor = Object.getOwnPropertyDescriptor(prototype, methodName);
   if (descriptor && typeof descriptor.value === "function") {
     const originalMethod = descriptor.value;
-    if (originalMethod.constructor.name === "AsyncFunction") {
-      descriptor.value = async function(...args) {
-        const response = await originalMethod.call(this, ...args);
-        this.__resetComputedProperties();
-        this.__notifyObservers();
-        return response;
-      };
-    } else {
-      descriptor.value = function(...args) {
-        const response = originalMethod.call(this, ...args);
-        this.__resetComputedProperties();
-        this.__notifyObservers();
-        return response;
-      };
-    }
+    descriptor.value = originalMethod.constructor.name === "AsyncFunction" ? async function(...args) {
+      const response = await originalMethod.call(this, ...args);
+      this.__resetComputedProperties();
+      this.__notifyObservers();
+      return response;
+    } : function(...args) {
+      const response = originalMethod.call(this, ...args);
+      this.__resetComputedProperties();
+      this.__notifyObservers();
+      return response;
+    };
     Object.defineProperty(prototype, methodName, descriptor);
   }
 }
-function instrumentComputed(target, getterName) {
-  const prototype = Object.getPrototypeOf(target).prototype;
+function instrumentComputed(prototype, getterName) {
   const descriptor = Object.getOwnPropertyDescriptor(prototype, getterName);
   if (descriptor && typeof descriptor.get === "function") {
     const originalGetter = descriptor.get;
     descriptor.get = function() {
       if (!this.__computedProperties) {
-        Object.defineProperties(
-          this,
-          {
-            __computedProperties: { value: /* @__PURE__ */ new Map() }
-          },
-          {
-            __computedProperties: { enumerable: false, writable: false }
-          }
-        );
+        Object.defineProperty(this, "__computedProperties", {
+          value: /* @__PURE__ */ new Map(),
+          enumerable: false,
+          writable: false
+        });
       }
       if (this.__computedProperties.has(getterName)) {
         return this.__computedProperties.get(getterName);
@@ -49,83 +39,73 @@ function instrumentComputed(target, getterName) {
     Object.defineProperty(prototype, getterName, descriptor);
   }
 }
-function makeObservable(constructor2, actions = [], computeds = []) {
-  class SuperClass extends constructor2 {
+function definePrivateProperty(instance, propertyName, initialValue) {
+  Object.defineProperty(instance, propertyName, {
+    value: initialValue,
+    enumerable: false,
+    writable: false
+  });
+}
+function makeObservable(constructor) {
+  Object.assign(constructor.prototype, {
     __notifyObservers() {
-      this.__observers?.forEach((listener) => {
-        listener();
-      });
-    }
+      this.__observers?.forEach((listener) => listener());
+    },
     __resetComputedProperties() {
       this.__computedProperties?.clear();
-    }
+    },
     __observe(callback) {
       if (!this.__observers) {
-        Object.defineProperties(
-          this,
-          {
-            __observers: { value: /* @__PURE__ */ new Set() }
-          },
-          {
-            __observers: { enumerable: false, writable: false }
-          }
-        );
+        definePrivateProperty(this, "__observers", /* @__PURE__ */ new Set());
       }
       this.__observers.add(callback);
-      return () => {
-        this.__observers.delete(callback);
-      };
-    }
+      return () => this.__observers.delete(callback);
+    },
     __subscribe(onMessageCallback) {
       if (!this.__subscribers) {
-        Object.defineProperties(
-          this,
-          {
-            __subscribers: { value: /* @__PURE__ */ new Set() }
-          },
-          {
-            __subscribers: { enumerable: false, writable: false }
-          }
-        );
+        definePrivateProperty(this, "__subscribers", /* @__PURE__ */ new Set());
       }
       this.__subscribers.add(onMessageCallback);
-      return () => {
-        this.__subscribers.delete(onMessageCallback);
-      };
+      return () => this.__subscribers.delete(onMessageCallback);
     }
-  }
-  actions.forEach((methodName) => {
-    instrumentAction(SuperClass, methodName);
   });
-  computeds.forEach((propertyName) => {
-    instrumentComputed(SuperClass, propertyName);
-  });
-  return SuperClass;
+  const observableActions = constructor.observableActions ?? [];
+  observableActions.forEach(
+    (methodName) => instrumentAction(constructor.prototype, methodName)
+  );
+  const computedProperties = constructor.computedProperties ?? [];
+  computedProperties.forEach(
+    (propertyName) => instrumentComputed(constructor.prototype, propertyName)
+  );
 }
 function observeSlow(target, callback, timeout) {
-  let timer;
+  let isThrottled = false;
+  let pendingCallback = false;
   const listener = () => {
-    clearTimeout(timer);
-    timer = setTimeout(callback, timeout);
+    if (isThrottled) {
+      pendingCallback = true;
+      return;
+    }
+    callback();
+    isThrottled = true;
+    setTimeout(() => {
+      isThrottled = false;
+      if (pendingCallback) {
+        pendingCallback = false;
+        callback();
+      }
+    }, timeout);
   };
   return target.__observe(listener);
 }
 function observe(target, callback, timeout) {
-  if (timeout) {
-    return observeSlow(target, callback, timeout);
-  } else {
-    return target.__observe(callback);
-  }
+  return timeout ? observeSlow(target, callback, timeout) : target.__observe(callback);
 }
 function subscribe(target, onMessageCallback) {
   return target.__subscribe(onMessageCallback);
 }
 function notify(target, message) {
-  if (!target.__subscribers)
-    return;
-  target.__subscribers?.forEach((listener) => {
-    listener(message);
-  });
+  target.__subscribers?.forEach((listener) => listener(message));
 }
 
 // src/reaction.js
@@ -164,51 +144,73 @@ function track(target, source) {
   return disposer;
 }
 
-// src/LitObserver.js
-function litObserver(constructor, properties) {
-  class LitObserver extends constructor {
-    #observables = /* @__PURE__ */ new Set();
-    #disposers = /* @__PURE__ */ new Set();
-    constructor(...args) {
-      super(...args);
-    }
-    trackProperties() {
-      properties.forEach((property) => {
-        let observableProperty;
-        let delay;
-        if (Array.isArray(property)) {
-          observableProperty = this[property[0]];
-          delay = property[1];
-        } else {
-          observableProperty = this[property];
-        }
-        if (this.#observables.has(observableProperty)) {
-          return;
-        }
-        if (!observableProperty)
-          return;
-        this.#observables.add(observableProperty);
-        this.#disposers.add(
-          observe(observableProperty, this.requestUpdate.bind(this), delay)
-        );
-      });
-    }
-    updated(changedProperties) {
-      super.updated(changedProperties);
-      this.trackProperties();
-    }
-    disconnectedCallback() {
-      super.disconnectedCallback();
-      this.#disposers.forEach((disposer) => {
-        disposer();
-      });
-      this.#disposers.clear();
+// src/makeLitObserver.js
+var ObserverController = class {
+  constructor(host) {
+    this.host = host;
+    this.disposers = /* @__PURE__ */ new Map();
+    host.addController(this);
+    const constructor = this.host.constructor;
+    const descriptor = Object.getOwnPropertyDescriptor(
+      constructor,
+      "properties"
+    );
+    this.getProperties = () => {
+      if (descriptor && descriptor.get) {
+        return constructor.properties || {};
+      }
+      return constructor.hasOwnProperty("properties") ? constructor.properties : {};
+    };
+  }
+  hostConnected() {
+    const props = this.getProperties();
+    for (const [propName, config] of Object.entries(props)) {
+      this.setupObserver(propName, this.host[propName], config);
     }
   }
-  return eval(`(class ${constructor.name} extends LitObserver {})`);
+  hostDisconnected() {
+    for (const disposer of this.disposers.values()) {
+      disposer();
+    }
+    this.disposers.clear();
+  }
+  hostUpdate() {
+    const props = this.getProperties();
+    for (const [propName, config] of Object.entries(props)) {
+      if (config && config.observe !== false) {
+        const currentValue = this.host[propName];
+        this.setupObserver(propName, currentValue, config);
+      }
+    }
+  }
+  setupObserver(propName, value, config) {
+    const oldDisposer = this.disposers.get(propName);
+    const shouldObserve = config && config.observe !== false && value !== null && value !== void 0 && typeof value === "object";
+    if (oldDisposer && !shouldObserve) {
+      oldDisposer();
+      this.disposers.delete(propName);
+    }
+    if (shouldObserve && !this.disposers.has(propName)) {
+      const callback = () => this.host.requestUpdate();
+      const disposer = observe(value, callback, config.throttle);
+      this.disposers.set(propName, disposer);
+    }
+  }
+};
+function makeLitObserver(constructor) {
+  const originalConnectedCallback = constructor.prototype.connectedCallback;
+  constructor.prototype.connectedCallback = function() {
+    if (!this.__observer) {
+      this.__observer = new ObserverController(this);
+    }
+    if (originalConnectedCallback) {
+      originalConnectedCallback.call(this);
+    }
+  };
+  return constructor;
 }
 export {
-  litObserver,
+  makeLitObserver,
   makeObservable,
   notify,
   observe,

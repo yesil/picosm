@@ -1,4 +1,4 @@
-import { makeObservable, observe, track } from '../dist/picosm.js';
+import { makeObservable, observe, track } from '../../dist/picosm.js';
 
 let starIdCounter = 1;
 
@@ -96,6 +96,8 @@ function pointLineDistance(px, py, x1, y1, x2, y2) {
 }
 
 class Star {
+  static observableActions = ['connect', 'disconnect'];
+
   constructor(x, y, radius, color, velocity = { x: 0, y: 0 }) {
     this.id = starIdCounter++;
     this.x = x;
@@ -188,10 +190,12 @@ class Star {
   }
 }
 
-const StarObservable = makeObservable(Star, ['connect', 'disconnect'], []);
+makeObservable(Star);
 
 // Ranking class to manage stars and their ranking display
 class Ranking {
+  static computedProperties = ['sortedStars'];
+
   constructor(rankingDiv) {
     this.rankingDiv = rankingDiv;
     this.stars = [];
@@ -218,8 +222,7 @@ class Ranking {
     this.rankingDiv.innerHTML = html;
   }
 }
-
-const RankingObservable = makeObservable(Ranking, [], ['sortedStars']);
+makeObservable(Ranking);
 
 const container = document.getElementById('canvasContainer');
 const starCanvas = document.getElementById('starCanvas');
@@ -241,7 +244,7 @@ const starCtx = starCanvas.getContext('2d');
 const connectionCtx = connectionCanvas.getContext('2d');
 
 // Create a Ranking instance
-const ranking = new RankingObservable(rankingDiv);
+const ranking = new Ranking(rankingDiv);
 observe(ranking, () => ranking.update(), 100);
 
 // Interaction state
@@ -256,7 +259,7 @@ addButton.addEventListener('click', () => {
   const x = Math.random() * starCanvas.width * 0.8 + starCanvas.width * 0.1;
   const y = Math.random() * starCanvas.height * 0.8 + starCanvas.height * 0.1;
   const color = getRandomColor();
-  const newStar = new StarObservable(x, y, 40, color, { x: 0, y: 0 });
+  const newStar = new Star(x, y, 40, color, { x: 0, y: 0 });
   // Add the star to the ranking (which sets up observation)
   ranking.addStar(newStar);
 });

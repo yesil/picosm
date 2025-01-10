@@ -5,7 +5,7 @@
   "scripts": {
     "test": "web-test-runner test/**/*.test.js --node-resolve",
     "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch",
-    "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm && npx esbuild app/swc.js --bundle --outfile=./swc.js --format=esm --minify"
+    "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm --metafile=dist/meta.json && npx esbuild examples/swc.js --bundle --outfile=examples/cart/swc.js --format=esm --minify"
   },
   "type": "module",
   "files": [

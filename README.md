@@ -2,10 +2,11 @@
 
 ## Demos
 
-Shopping cart demo: (https://yesil.github.io/picosm)
-
+Shopping cart demo: (https://yesil.github.io/picosm/examples/cart/index.html)
 <br>
-Canvas demo: (https://yesil.github.io/picosm/stars-demo)
+
+Canvas demo: (https://yesil.github.io/picosm/examples/stars/index.html)
+<br>
 
 In this demo, the ranking of stars with the most connection is updated using a debounced observer, and tracking connected stars.
 Use the metakey to connect stars to each other.
@@ -18,36 +19,39 @@ Pico State Manager is an experimental, lightweight, zero-dependency state manage
 
 It also provides a helper function to make Lit components observers and updates them on changes.
 
-Currently, the non-minified bundle size is `6027 bytes` and around `1545 bytes` gzipped.
+Currently, the non-minified bundle size is `6747 bytes` and around `1794 bytes` gzipped.
 
 You can also import only the specific modules you need from the source to further reduce the size.
 
 ## Features
 
-- `makeObservable`: Generates a new class whose instances are observable.
+- `makeObservable`: Instruments a class with observable capabilities.
 - `observe`: Callback when the instance of an observable class changes.
 - `reaction`: React to specific changes.
 - `track`: Tracks other observables and notifies own observers on change.
-- `subscribe`: Subscribe to arbitraty messages sent over an observable.
+- `subscribe`: Subscribe to arbitrary messages sent over an observable.
 - `notify`: Notify all subscribers of an observable with arbitrary messages.
-- `computed`: Cache computed values at the first access, and resets the cache on change
+- `computed`: Cache computed values at the first access, and resets the cache on change.
+- `makeLitObserver`: Helper function to make Lit components observers and update them on changes.
 
 ## How to Use
 
 Add the picosm dependency:
 
 ```bash
-npm add https://github.com/yesil/picosm/releases/download/v1.0.3/picosm-1.0.3.tgz
+npm add https://github.com/yesil/picosm/releases/download/v1.0.4/picosm-1.0.5.tgz
 ```
 
 See the unit test: https://github.com/yesil/picosm/blob/main/test/LitObserver.test.js <br>
-See the demo app source code: https://github.com/yesil/picosm/tree/main/app for a more comprehensive example.
+See the demo app source code: https://github.com/yesil/picosm/tree/main/examples for a more comprehensive example.
 
 ## API Documentation
 
 ### `makeObservable`
 
-Generates a new class whose instances are observable.
+Makes a class observable by adding reactive capabilities. The class should define:
+- `static observableActions`: Array of method names that should notify observers when called
+- `static computedProperties`: Array of getter names that should be cached until invalidated by an observable action
 
 #### Example
 
@@ -55,6 +59,9 @@ Generates a new class whose instances are observable.
 import { makeObservable } from 'picosm';
 
 class Counter {
+  static observableActions = ['increment', 'incrementOther'];
+  static computedProperties = ['total'];
+
   value = 0;
   otherValue = 0;
 
@@ -71,8 +78,8 @@ class Counter {
   }
 }
 
-const CounterObservable = makeObservable(Counter, ['increment', 'incrementOther']);
-const instance = new CounterObservable();
+makeObservable(Counter);
+const instance = new Counter();
 instance.increment();
 console.log(instance.value); // 1
 ```

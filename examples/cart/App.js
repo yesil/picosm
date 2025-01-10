@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'https://jspm.dev/npm:lit@2';
-import { StoreObservable } from './model.js';
-import { litObserver, reaction } from '../dist/picosm.js';
+import { Store } from './model.js';
+import { makeLitObserver, reaction } from '../../dist/picosm.js';
 
 /**
  * also see ../index.html
@@ -80,7 +80,7 @@ export class App extends LitElement {
 
   constructor() {
     super();
-    this.store = new StoreObservable();
+    this.store = new Store();
     this.reactionDisposer = reaction(
       this.store,
       ({ lastProduct }) => [lastProduct?.title],
@@ -178,4 +178,4 @@ export class App extends LitElement {
   }
 }
 
-customElements.define('pico-demo', litObserver(App, ['store']));
+customElements.define('pico-demo', makeLitObserver(App));
