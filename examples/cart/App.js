@@ -1,4 +1,4 @@
-import { LitElement, html, css } from 'https://jspm.dev/npm:lit@2';
+import { LitElement, html, css } from 'lit';
 import { Store } from './model.js';
 import { makeLitObserver, reaction } from '../../dist/picosm.js';
 
