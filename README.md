@@ -31,7 +31,6 @@ You can also import only the specific modules you need from the source to furthe
 - `track`: Tracks other observables and notifies own observers on change.
 - `subscribe`: Subscribe to arbitrary messages sent over an observable.
 - `notify`: Notify all subscribers of an observable with arbitrary messages.
-- `computed`: Cache computed values at the first access, and resets the cache on change.
 - `makeLitObserver`: Helper function to make Lit components observers and update them on changes.
 
 ## How to Use
@@ -50,6 +49,7 @@ See the demo app source code: https://github.com/yesil/picosm/tree/main/examples
 ### `makeObservable`
 
 Makes a class observable by adding reactive capabilities. The class should define:
+
 - `static observableActions`: Array of method names that should notify observers when called
 - `static computedProperties`: Array of getter names that should be cached until invalidated by an observable action
 
@@ -136,7 +136,7 @@ Returns a `disposer` function.
 ```javascript
 import { track, observe } from 'picosm';
 
-const otherInstance = new CounterObservable();
+const otherInstance = new Counter();
 const disposer = track(instance, otherInstance); // notify instance when otherInstance changes
 
 const disposer = observe(instance, () => {
@@ -149,11 +149,13 @@ disposer();
 ### `subscribe & notify`
 
 #### subscribe
+
 Subscribe to arbitrary messages sent over an observable.
 
 Returns a `disposer` function.
 
 #### notify
+
 Notify all subscribers of an observable with arbitrary messages.
 
 #### Example
@@ -167,17 +169,6 @@ const disposer = subscribe(instance, (message) => {
 notify(instance, 'hello world');
 disposer(); // Stops subscribing
 ```
-
-### `computed`
-
-Cache computed values at the first access, and resets the cache on change.
-
-```javascript
-const CounterObservable = makeObservable(Counter, ['increment', 'incrementOther'], ['total']);
-```
-
-the total getter value will be computed only once until this observable changes.
-
 
 ## Contributing
 
