@@ -27,6 +27,9 @@ let gameLoop;
 let lastTimestamp = 0;
 let canJump = true;
 
+// Bonus points animation
+let bonusAnimations = [];
+
 // Input handling
 const keys = {
     left: false,
@@ -185,6 +188,15 @@ function update(timestamp) {
             const playerAbove = game.player.y + PLAYER_HEIGHT <= bouncingObstacle.y;
             if (playerSide && lastPlayerSide && playerSide !== lastPlayerSide && playerAbove) {
                 game.scoreManager.addPoints(10);
+                // Add bonus animation
+                bonusAnimations.push({
+                    text: '+10',
+                    x: 120, // Near the score display
+                    y: 30,
+                    opacity: 1.0,
+                    scale: 1.0,
+                    startTime: timestamp
+                });
             }
             if (playerSide) {
                 lastPlayerSide = playerSide;
@@ -221,7 +233,30 @@ function update(timestamp) {
             game._scoreTimer -= 1000;
         }
 
-        render();
+    }
+
+    // Update bonus animations even when game is not running
+    bonusAnimations = bonusAnimations.filter(animation => {
+        const elapsed = timestamp - animation.startTime;
+        const duration = 1500; // 1.5 seconds
+        const progress = elapsed / duration;
+        
+        if (progress >= 1) {
+            return false; // Remove animation
+        }
+        
+        // Fade out and move up
+        animation.opacity = 1 - progress;
+        animation.y = 30 - (progress * 30); // Move up 30 pixels
+        animation.scale = 1 + (progress * 0.5); // Slightly grow
+        
+        return true; // Keep animation
+    });
+
+    render();
+    
+    // Continue animation loop if there are bonus animations or game is running
+    if (game.isRunning || bonusAnimations.length > 0) {
         gameLoop = requestAnimationFrame(update);
     }
 }
@@ -249,6 +284,17 @@ function render() {
         ctx.fillStyle = '#111';
         ctx.fillRect(bouncingObstacle.x, bouncingObstacle.y, bouncingObstacle.width, bouncingObstacle.height);
     }
+
+    // Draw bonus point animations
+    bonusAnimations.forEach(animation => {
+        ctx.save();
+        ctx.font = `bold ${20 * animation.scale}px Arial`;
+        ctx.fillStyle = `rgba(76, 175, 80, ${animation.opacity})`;
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(animation.text, animation.x, animation.y);
+        ctx.restore();
+    });
 
     // Draw 'Game Over' message if game is not running and timeLeft > 0
     if (!game.isRunning && game.timeLeft > 0 && game.scoreManager.totalScore > 0) {
