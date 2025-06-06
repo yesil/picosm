@@ -40,12 +40,15 @@ const keys = {
 window.addEventListener('keydown', (e) => {
     switch(e.key) {
         case 'ArrowLeft':
+            e.preventDefault();
             keys.left = true;
             break;
         case 'ArrowRight':
+            e.preventDefault();
             keys.right = true;
             break;
         case ' ':
+            e.preventDefault(); // Prevent page scrolling
             if (canJump && !game.player.jumping && game.player.y >= GROUND_Y - PLAYER_HEIGHT) {
                 game.player.jump();
                 canJump = false;
@@ -57,12 +60,15 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('keyup', (e) => {
     switch(e.key) {
         case 'ArrowLeft':
+            e.preventDefault();
             keys.left = false;
             break;
         case 'ArrowRight':
+            e.preventDefault();
             keys.right = false;
             break;
         case ' ':
+            e.preventDefault(); // Prevent page scrolling
             keys.space = false;
             canJump = true;
             break;
