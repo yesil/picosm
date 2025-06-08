@@ -1,6 +1,6 @@
 {
   "name": "picosm",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "main": "dist/picosm.js",
   "types": "dist/index.d.ts",
   "scripts": {
@@ -25,7 +25,7 @@
     "@spectrum-web-components/number-field": "^0.47.2",
     "@spectrum-web-components/table": "^0.47.2",
     "@spectrum-web-components/theme": "^0.47.2",
-    "@web/dev-server-esbuild": "^0.4.1",
+    "@web/dev-server-esbuild": "^1.0.4",
     "@web/test-runner": "^0.19.0",
     "eslint": "^9.5.0",
     "eslint-config-prettier": "^9.1.0",
