@@ -55,7 +55,7 @@ window.addEventListener('keydown', (e) => {
             }
             break;
     }
-});
+}, { passive: false });
 
 window.addEventListener('keyup', (e) => {
     switch(e.key) {
@@ -73,7 +73,7 @@ window.addEventListener('keyup', (e) => {
             canJump = true;
             break;
     }
-});
+}, { passive: false });
 
 // Only one obstacle
 let bouncingObstacle = null;
