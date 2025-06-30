@@ -1,7 +1,7 @@
 import { makeObservable } from '../../dist/picosm.js';
 
 class Game {
-    static observableActions = ['start', 'stop', 'pause', 'resume', 'reset', 'addObstacle', 'removeObstacle'];
+    static observableActions = ['start', 'stop', 'pause', 'resume', 'reset', 'addObstacle', 'removeObstacle', 'countDown'];
     static computedProperties = ['score', 'timeLeft', 'isRunning'];
 
     constructor() {
@@ -17,14 +17,22 @@ class Game {
         this.isRunning = true;
         this.timeLeft = 60;
         this.score = 0;
+        this.countDownInterval = setInterval(() => {
+            this.countDown();
+        }, 1000);
     }
 
     stop() {
         this.isRunning = false;
+        clearInterval(this.countDownInterval);
     }
 
     pause() {
         this.isRunning = false;
+    }
+
+    countDown() {
+        this.timeLeft--;
     }
 
     resume() {
