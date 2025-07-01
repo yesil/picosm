@@ -220,7 +220,7 @@ function update(timestamp) {
         }
 
         // Update time
-        game.timeLeft = Math.max(0, game.timeLeft - deltaTime / 1000);
+        game.updateTimer(deltaTime);
         if (game.timeLeft <= 0) {
             game.stop();
             // Save current score as last score before resetting
