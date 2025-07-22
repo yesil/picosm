@@ -1,5 +1,5 @@
 import { observe } from '../../dist/picosm.js';
-import { Game, Player, Score, Obstacle } from './model.js';
+import { Game, Obstacle } from './model.js';
 
 // Initialize game
 const game = new Game();
@@ -211,6 +211,7 @@ function update(timestamp) {
 
         // Collision detection
         if (bouncingObstacle && bouncingObstacle.collidesWith(game.player)) {
+            game.setGameState('died');
             game.stop();
             // Save current score as last score before resetting
             game.scoreManager._lastScore = game.scoreManager.totalScore;
@@ -222,6 +223,7 @@ function update(timestamp) {
         // Update time
         game.updateTimer(deltaTime);
         if (game.timeLeft <= 0) {
+            game.setGameState('timeout');
             game.stop();
             // Save current score as last score before resetting
             game.scoreManager._lastScore = game.scoreManager.totalScore;
@@ -302,8 +304,8 @@ function render() {
         ctx.restore();
     });
 
-    // Draw 'Game Over' message if game is not running and timeLeft > 0
-    if (!game.isRunning && game.timeLeft > 0 && game.scoreManager.totalScore > 0) {
+    // Draw 'Game Over' message only when player dies from collision
+    if (game.gameState === 'died') {
         ctx.save();
         ctx.font = 'bold 48px Arial';
         ctx.fillStyle = '#ff4444';

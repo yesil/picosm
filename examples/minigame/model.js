@@ -1,13 +1,14 @@
 import { makeObservable } from '../../dist/picosm.js';
 
 class Game {
-    static observableActions = ['start', 'stop', 'pause', 'resume', 'reset', 'addObstacle', 'removeObstacle', 'updateTimer'];
-    static computedProperties = ['score', 'timeLeft', 'isRunning'];
+    static observableActions = ['start', 'stop', 'pause', 'resume', 'reset', 'addObstacle', 'removeObstacle', 'updateTimer', 'setGameState'];
+    static computedProperties = ['score', 'timeLeft', 'isRunning', 'gameState'];
 
     constructor() {
         this.score = 0;
         this.timeLeft = 60; // 60 seconds game time
         this.isRunning = false;
+        this.gameState = 'initial'; // 'initial', 'playing', 'died', 'timeout', 'reset'
         this.player = new Player();
         this.scoreManager = new Score();
         this.obstacles = [];
@@ -17,9 +18,7 @@ class Game {
         this.isRunning = true;
         this.timeLeft = 60;
         this.score = 0;
-        // this.countDownInterval = setInterval(() => {
-        //     this.countDown();
-        // }, 1000);
+        this.gameState = 'playing';
     }
     
     updateTimer() {
@@ -28,7 +27,6 @@ class Game {
 
     stop() {
         this.isRunning = false;
-        // clearInterval(this.countDownInterval);
     }
 
     pause() {
@@ -47,7 +45,12 @@ class Game {
         this.score = 0;
         this.timeLeft = 60;
         this.isRunning = false;
+        this.gameState = 'initial';
         this.player.setPosition(0, 0);
+    }
+
+    setGameState(state) {
+        this.gameState = state;
     }
 
     addObstacle(obstacle) {
