@@ -1,5 +1,5 @@
 import { expect } from '@esm-bundle/chai';
-import { makeObservable } from '../src/makeObservable.js';
+import { makeObservable, observe } from '../src/makeObservable.js';
 import { html, LitElement } from 'lit';
 import { makeLitObserver } from '../src/makeLitObserver.js';
 
@@ -25,7 +25,7 @@ makeObservable(User);
 
 class HelloWorld extends LitElement {
   static properties = {
-    user: { type: Object },  /* observe: true by default */
+    user: { type: Object, observe: true },  /* observe: true by default */
   };
   render() {
     return html`<p>Hello, ${this.user?.name ?? 'World'}!</p>`;
@@ -36,7 +36,7 @@ customElements.define('hello-world', makeLitObserver(HelloWorld));
 
 class HelloWorldSlow extends LitElement {
   static properties = {
-    user: { type: Object, throttle: 200 },
+    user: { type: Object, observe: true, throttle: 200 },
   };
   render() {
     return html`<p>Hello, ${this.user?.name ?? 'World'}!</p>`;

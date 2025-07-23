@@ -52,8 +52,7 @@ class ObserverController {
   setupObserver(propName, value, config) {
     const oldDisposer = this.disposers.get(propName);
     const shouldObserve =
-      config &&
-      config.observe !== false &&
+      config?.observe === true &&
       value !== null &&
       value !== undefined &&
       typeof value === 'object';

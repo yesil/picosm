@@ -1,13 +1,13 @@
 import { LitElement, html, css } from 'lit';
 import { Store } from './model.js';
-import { makeLitObserver, reaction } from '../../dist/picosm.js';
+import { makeLitObserver, observe, reaction } from '../../dist/picosm.js';
 
 /**
  * also see ../index.html
  */
 export class App extends LitElement {
   static properties = {
-    store: {},
+    store: { observe: true },
     lastProductTitle: {},
   };
 
@@ -110,16 +110,16 @@ export class App extends LitElement {
           />
           <div slot="footer">
             ${product.quantity === 0
-              ? html`
+          ? html`
                   <sp-button
                     variant="accent"
                     @click="${() => this.store.addToCart(product)}"
                     >Add</sp-button
                   >
                 `
-              : ''}
+          : ''}
             ${product.quantity > 0
-              ? html`
+          ? html`
                   <sp-field-label
                     side-aligned="start"
                     for="card-quantity-${index}"
@@ -129,10 +129,10 @@ export class App extends LitElement {
                     id="card-quantity-${index}"
                     value="${product.quantity}"
                     @change="${(e) =>
-                      this.store.updateQuantity(product, e.target.value)}"
+              this.store.updateQuantity(product, e.target.value)}"
                   ></sp-number-field>
                 `
-              : ''}
+          : ''}
           </div>
         </sp-card>
       `,
