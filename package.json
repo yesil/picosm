@@ -10,13 +10,28 @@
   },
   "type": "module",
   "files": [
-    "src",
-    "dist"
+    "dist",
+    "examples/minigame"
   ],
-  "keywords": [],
+  "keywords": [
+    "state-management",
+    "observable",
+    "reactive",
+    "lit",
+    "web-components",
+    "lightweight"
+  ],
   "author": "Ilyas Stéphne Türkben",
   "license": "ISC",
   "description": "Lightweight state manager that makes arbitrary classes observable",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git"
+  },
+  "homepage": "https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME#readme",
+  "bugs": {
+    "url": "https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME/issues"
+  },
   "devDependencies": {
     "@esm-bundle/chai": "^4.3.4-fix.0",
     "@spectrum-web-components/badge": "^0.47.2",
