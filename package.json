@@ -11,8 +11,7 @@
   "type": "module",
   "files": [
     "src",
-    "dist",
-    "examples/minigame"
+    "dist"
   ],
   "keywords": [
     "state-management",
