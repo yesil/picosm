@@ -92,10 +92,6 @@ class Player {
         this.y = y;
     }
 
-    get isJumping() {
-        return this.jumping;
-    }
-
     get position() {
         return { x: this.x, y: this.y };
     }
