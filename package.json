@@ -13,10 +13,25 @@
     "src",
     "dist"
   ],
-  "keywords": [],
+  "keywords": [
+    "state-management",
+    "observable",
+    "reactive",
+    "lit",
+    "web-components",
+    "lightweight"
+  ],
   "author": "Ilyas Stéphne Türkben",
   "license": "ISC",
   "description": "Lightweight state manager that makes arbitrary classes observable",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yesil/picosm.git"
+  },
+  "homepage": "https://github.com/yesil/picosm#readme",
+  "bugs": {
+    "url": "https://github.com/yesil/picosm/issues"
+  },
   "devDependencies": {
     "@esm-bundle/chai": "^4.3.4-fix.0",
     "@spectrum-web-components/badge": "^0.47.2",
@@ -25,7 +40,7 @@
     "@spectrum-web-components/number-field": "^0.47.2",
     "@spectrum-web-components/table": "^0.47.2",
     "@spectrum-web-components/theme": "^0.47.2",
-    "@web/dev-server-esbuild": "^0.4.1",
+    "@web/dev-server-esbuild": "^1.0.4",
     "@web/test-runner": "^0.19.0",
     "eslint": "^9.5.0",
     "eslint-config-prettier": "^9.1.0",

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Game StateManager Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+
+        .game-container {
+            position: relative;
+            margin: 20px;
+        }
+
+        #gameCanvas {
+            background-color: #fff;
+            border: 2px solid #333;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+
+        .controls {
+            margin: 20px 0;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 800px;
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .score-display, .time-display {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .high-score {
+            color: #ff6b6b;
+        }
+
+        .last-score {
+            color: #6b6bff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Mini Game StateManager Demo</h1>
+    
+    <div class="game-info">
+        <div class="score-display">
+            Score: <span id="currentScore">0</span>
+            <span class="high-score">High Score: <span id="highScore">0</span></span>
+            <span class="high-score">Last Score: <span id="lastScore">0</span></span>
+        </div>
+        <div class="time-display">
+            Time: <span id="timeLeft">60</span>s
+        </div>
+    </div>
+
+    <div class="game-container">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+    </div>
+
+    <div class="controls">
+        <button id="startButton">Start Game</button>
+        <button id="pauseButton" disabled>Pause</button>
+        <button id="resetButton">Reset</button>
+    </div>
+
+    <div class="instructions">
+        <h3>Controls:</h3>
+        <p>Use ← and → arrow keys to move</p>
+        <p>Press Space to jump</p>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
