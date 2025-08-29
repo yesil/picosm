@@ -111,30 +111,15 @@ function notify(target, message) {
 // src/reaction.js
 function reaction(targetOrTargets, callback, execute, timeout) {
   let lastProps = [];
-<<<<<<< HEAD
   const targets = Array.isArray(targetOrTargets) ? targetOrTargets : [targetOrTargets];
   const runner = () => {
     const props = targets.length === 1 ? callback(targets[0]) : callback(...targets);
-    if (lastProps === props)
-      return;
+    if (lastProps === props) return;
     let shouldExecute = false;
     for (let i = 0; i < props.length; i++) {
       if (lastProps[i] !== props[i]) {
         shouldExecute = true;
         break;
-=======
-  return observe(
-    target,
-    () => {
-      const props = callback(target);
-      if (lastProps === props) return;
-      let shouldExecute = false;
-      for (let i = 0; i < props.length; i++) {
-        if (lastProps[i] !== props[i]) {
-          shouldExecute = true;
-          break;
-        }
->>>>>>> d9ecd5e898e2cf61da756159510bf563cf971051
       }
     }
     if (shouldExecute) {
