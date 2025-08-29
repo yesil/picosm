@@ -122,6 +122,27 @@ instance.incrementOther(); // nothing happens
 disposer(); // Stops reacting
 ```
 
+#### Multiple targets
+
+You can watch multiple observables at once by passing an array of targets. The `callback` receives the targets as positional parameters in the same order, and `execute` is called with the returned props when any target change causes the returned array to differ.
+
+```javascript
+import { reaction } from 'picosm';
+
+const disposer = reaction(
+  [a, b],
+  (storeA, storeB) => {
+    const sum = storeA.counter + storeB.counter;
+    return [sum];
+  },
+  (sum) => {
+    console.log('Sum changed to', sum);
+  },
+);
+```
+
+Internally, one observer is registered per target, using the same callback, so any target change will trigger the same computation and comparison.
+
 ### `track`
 
 Tracks other observables and notifies own observers on change.

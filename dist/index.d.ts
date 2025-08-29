@@ -23,6 +23,9 @@ export interface ObservableConstructor {
   computedProperties?: string[];
 }
 
+// Disposer function returned by observers/subscribers/reactions
+export type Disposer = () => void;
+
 /**
  * Decorator function that makes a class observable by adding reactive capabilities.
  * Supports action methods, computed properties, and observer/subscriber patterns.
@@ -67,7 +70,14 @@ export function reaction<T extends any[]>(
   callback: (target: ObservableTarget) => T,
   execute: (...props: T) => void,
   timeout?: number
-): () => void;
+): Disposer;
+
+export function reaction<T extends any[]>(
+  targets: [ObservableTarget, ...ObservableTarget[]],
+  callback: (...targets: ObservableTarget[]) => T,
+  execute: (...props: T) => void,
+  timeout?: number
+): Disposer;
 
 
 /**
@@ -78,3 +88,10 @@ export function reaction<T extends any[]>(
  * @returns Cleanup function to stop tracking.
  */
 export function track(target: ObservableTarget, source: ObservableTarget): () => void; 
+
+/**
+ * Enhances a LitElement-like class to observe reactive properties on instances.
+ * Returns the same constructor for chaining.
+ * @param constructor - A class with LitController lifecycle hooks
+ */
+export function makeLitObserver<T extends new (...args: any[]) => any>(constructor: T): T;

@@ -109,28 +109,27 @@ function notify(target, message) {
 }
 
 // src/reaction.js
-function reaction(target, callback, execute, timeout) {
+function reaction(targetOrTargets, callback, execute, timeout) {
   let lastProps = [];
-  return observe(
-    target,
-    () => {
-      const props = callback(target);
-      if (lastProps === props)
-        return;
-      let shouldExecute = false;
-      for (let i = 0; i < props.length; i++) {
-        if (lastProps[i] !== props[i]) {
-          shouldExecute = true;
-          break;
-        }
+  const targets = Array.isArray(targetOrTargets) ? targetOrTargets : [targetOrTargets];
+  const runner = () => {
+    const props = targets.length === 1 ? callback(targets[0]) : callback(...targets);
+    if (lastProps === props)
+      return;
+    let shouldExecute = false;
+    for (let i = 0; i < props.length; i++) {
+      if (lastProps[i] !== props[i]) {
+        shouldExecute = true;
+        break;
       }
-      if (shouldExecute) {
-        lastProps = props;
-        execute(...props);
-      }
-    },
-    timeout
-  );
+    }
+    if (shouldExecute) {
+      lastProps = props;
+      execute(...props);
+    }
+  };
+  const disposers = targets.map((t) => observe(t, runner, timeout));
+  return () => disposers.forEach((d) => d());
 }
 
 // src/track.js
