@@ -1,59 +1,33 @@
-# Pico State Manager ⭐️
+# picosm
 
-## Demos
+Lightweight, zero-dependency state manager that replicates core MobX features without using Proxy objects.
 
-Shopping cart demo: (https://yesil.github.io/picosm/examples/cart/index.html)
-<br>
+**~1.2 KB** gzipped | **3.5 KB** minified | **7.4 KB** source
 
-Canvas demo: (https://yesil.github.io/picosm/examples/stars/index.html)
-<br>
-In this demo, the ranking of stars with the most connection is updated using a debounced observer, and tracking connected stars.
-Use the metakey to connect stars to each other.
-
-## Introduction
-
-Pico State Manager is an experimental, lightweight, zero-dependency state manager that replicates core MobX features without using Proxy objects.
-
-It also provides a helper function to make Lit components observers and updates them on changes.
-
-Currently, the non-minified bundle size is `6729 bytes` and around `1794 bytes` gzipped.
-
-You can also import only the specific modules you need from the source to further reduce the size.
+```bash
+npm add https://github.com/yesil/picosm/releases/download/v1.2.1/picosm-1.2.1.tgz
+```
 
 ## Features
 
-- `makeObservable`: Instruments a class with observable capabilities.
-- `observe`: Callback when the instance of an observable class changes.
-- `reaction`: React to specific changes.
-- `track`: Tracks other observables and notifies own observers on change.
-- `subscribe`: Subscribe to arbitrary messages sent over an observable.
-- `notify`: Notify all subscribers of an observable with arbitrary messages.
-- `makeLitObserver`: Helper function to make Lit components observers and update them on changes.
+- **No Proxy** — instruments classes via static declarations, no magic
+- **Microtask batching** — multiple synchronous actions coalesce into a single notification
+- **Async actions** — handles both `async` functions and promise-returning methods
+- **Computed caching** — getter values are cached until invalidated by an action
+- **Throttled observe** — built-in throttling for high-frequency updates
+- **Lit integration** — `makeLitObserver` wires observable properties to `requestUpdate` automatically
+- **Tree-shakeable** — import only what you need from individual modules
 
-## How to Use
+## Demos
 
-Add the picosm dependency:
+- [Shopping cart](https://yesil.github.io/picosm/examples/cart/index.html) — Lit + Spectrum Web Components
+- [Stars canvas](https://yesil.github.io/picosm/examples/stars/index.html) — debounced observer + tracking connected stars (use metakey to connect)
+- [Minigame](https://yesil.github.io/picosm/examples/minigame/index.html)
 
-```bash
-npm add https://github.com/yesil/picosm/releases/download/v1.1.0/picosm-1.1.0.tgz
-```
-
-See the unit test: https://github.com/yesil/picosm/blob/main/test/LitObserver.test.js <br>
-See the demo app source code: https://github.com/yesil/picosm/tree/main/examples for a more comprehensive example.
-
-## API Documentation
-
-### `makeObservable`
-
-Makes a class observable by adding reactive capabilities. The class should define:
-
-- `static observableActions`: Array of method names that should notify observers when called
-- `static computedProperties`: Array of getter names that should be cached until invalidated by an observable action
-
-#### Example
+## Quick start
 
 ```javascript
-import { makeObservable } from 'picosm';
+import { makeObservable, observe } from 'picosm';
 
 class Counter {
   static observableActions = ['increment'];
@@ -66,131 +40,163 @@ class Counter {
     this.value += 1;
   }
 
-  incrementOther() {
-    this.otherValue += 1;
-  }
-
   get total() {
     return this.value + this.otherValue;
   }
 }
 
 makeObservable(Counter);
-const instance = new Counter();
-instance.increment();
-console.log(instance.value); // 1
+
+const counter = new Counter();
+const disposer = observe(counter, () => console.log('changed:', counter.value));
+
+counter.increment(); // logs: "changed: 1"
+disposer();          // stops observing
 ```
 
-### `observe`
+Only methods listed in `observableActions` trigger notifications. Calling unlisted methods mutates state silently — useful for internal helpers or batch setup.
 
-Creates an observer for a given observable.
+## API
 
-Returns a `disposer` function.
+### `makeObservable(constructor)`
 
-#### Example
+Instruments a class with observable capabilities. Call once per class.
+
+The class should declare:
+- `static observableActions` — method names that notify observers after execution
+- `static computedProperties` — getter names whose values are cached until the next action
+
+### `observe(target, callback, timeout?)`
+
+Registers a `callback` that fires when any observable action completes on `target`.
+
+Returns a **disposer** function.
 
 ```javascript
-import { observe } from 'picosm';
+// Immediate — fires on every action
+const disposer = observe(counter, () => console.log('changed'));
 
-const disposer = observe(instance, () => {
-  console.log('Instance changed');
-});
-instance.increment(); // Logs: 'Instance changed'
-disposer(); // Stops observing
+// Throttled — fires at most once per 200ms, with trailing edge
+const disposer = observe(counter, () => console.log('changed'), 200);
 ```
 
-### `reaction`
+Notifications are batched via microtask: multiple synchronous actions on the same target produce a single callback invocation.
 
-React to specific changes.
+### `reaction(target, selector, effect, timeout?)`
 
-Returns a `disposer` function.
+Runs `selector(target)` after each action. When the returned array differs element-wise from the previous result, calls `effect(...values)`. Return an empty array from `selector` to skip execution.
 
-#### Example
+Returns a **disposer** function.
 
 ```javascript
 import { reaction } from 'picosm';
 
 const disposer = reaction(
-  instance,
+  counter,
   ({ value }) => [value],
-  (value) => {
-    console.log('Value changed to', value);
-  },
+  (value) => console.log('Value changed to', value),
 );
-instance.increment(); // Logs: 'Value changed to 1'
-instance.incrementOther(); // nothing happens
-disposer(); // Stops reacting
+counter.increment(); // logs: "Value changed to 1"
+disposer();
 ```
 
 #### Multiple targets
 
-You can watch multiple observables at once by passing an array of targets. The `callback` receives the targets as positional parameters in the same order, and `execute` is called with the returned props when any target change causes the returned array to differ.
+Pass an array of targets. The `selector` receives them as positional arguments:
 
 ```javascript
-import { reaction } from 'picosm';
-
 const disposer = reaction(
-  [a, b],
-  (storeA, storeB) => {
-    const sum = storeA.counter + storeB.counter;
-    return [sum];
+  [storeA, storeB],
+  (a, b) => {
+    const sum = a.counter + b.counter;
+    return sum % 5 === 0 && sum !== 0 ? [sum] : [];
   },
-  (sum) => {
-    console.log('Sum changed to', sum);
-  },
+  (sum) => console.log('Sum divisible by 5:', sum),
 );
 ```
 
-Internally, one observer is registered per target, using the same callback, so any target change will trigger the same computation and comparison.
+### `track(target, source)`
 
-### `track`
+Forwards notifications: when `source` changes, `target`'s observers are notified and its computed properties are invalidated.
 
-Tracks other observables and notifies own observers on change.
-
-Returns a `disposer` function.
-
-#### Example
+Returns a **disposer** function.
 
 ```javascript
 import { track, observe } from 'picosm';
 
-const otherInstance = new Counter();
-const disposer = track(instance, otherInstance); // notify instance when otherInstance changes
+const parent = new Counter();
+const child = new Counter();
 
-const disposer = observe(instance, () => {
-  console.log('tracked dependency has changed', otherInstance);
+const untrack = track(parent, child);
+
+observe(parent, () => {
+  console.log('child changed, parent notified');
 });
-otherInstance.increment();
-disposer();
+
+child.increment(); // triggers both child and parent observers
+untrack();
 ```
 
-### `subscribe & notify`
+### `subscribe(target, callback)` / `notify(target, message)`
 
-#### subscribe
+A message-passing channel over any observable. Unlike `observe`, messages are delivered synchronously and carry an explicit payload.
 
-Subscribe to arbitrary messages sent over an observable.
-
-Returns a `disposer` function.
-
-#### notify
-
-Notify all subscribers of an observable with arbitrary messages.
-
-#### Example
+Returns a **disposer** function (from `subscribe`).
 
 ```javascript
 import { subscribe, notify } from 'picosm';
 
-const disposer = subscribe(instance, (message) => {
-  console.log('Message received', message);
-});
-notify(instance, 'hello world');
-disposer(); // Stops subscribing
+const disposer = subscribe(counter, (msg) => console.log('Received:', msg));
+notify(counter, { type: 'reset', value: 0 });
+disposer();
 ```
+
+### `makeLitObserver(constructor)`
+
+Enhances a `LitElement` class to automatically observe properties marked with `observe: true`. When the observed object's actions fire, the component calls `requestUpdate`.
+
+```javascript
+import { html, LitElement } from 'lit';
+import { makeLitObserver } from 'picosm';
+
+class MyView extends LitElement {
+  static properties = {
+    counter: { type: Object, observe: true },
+    // throttled: only re-render at most once per 200ms
+    stats: { type: Object, observe: true, throttle: 200 },
+  };
+
+  render() {
+    return html`<p>Count: ${this.counter?.value}</p>`;
+  }
+}
+
+customElements.define('my-view', makeLitObserver(MyView));
+```
+
+When a new object is assigned to an observed property, the old observer is disposed and a new one is bound automatically.
+
+## Async actions
+
+Actions that return a `Promise` (whether declared `async` or not) notify observers after the promise resolves:
+
+```javascript
+class Store {
+  static observableActions = ['fetchData'];
+  data = null;
+
+  async fetchData() {
+    const res = await fetch('/api/data');
+    this.data = await res.json();
+  }
+}
+
+makeObservable(Store);
+```
+
+Intermediate state changes within an async action are not observable until the action completes. If you need to notify observers mid-action, split it into separate actions.
 
 ## Contributing
 
-Please feel free to:
-
-- Open a PR to contribute.
-- Create an issue to request a feature.
+- Open a PR to contribute
+- [Create an issue](https://github.com/yesil/picosm/issues) to request a feature or report a bug

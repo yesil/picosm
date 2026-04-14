@@ -33,5 +33,6 @@ typings/
 .eslintcache
 
 meta.json
+dist/
 
 *.tgz

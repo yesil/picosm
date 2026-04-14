@@ -50,7 +50,5 @@
     "prettier": "^3.3.2",
     "sinon": "^15.2.0"
   },
-  "dependencies": {
-    "@spectrum-web-components/theme": "^1.0.1"
-  }
+  "dependencies": {}
 }

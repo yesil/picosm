@@ -3,9 +3,11 @@ import { expect } from '@esm-bundle/chai';
 import { reaction } from '../src/reaction.js';
 import TestStore from './TestStore.js';
 
+const flush = () => new Promise((r) => queueMicrotask(r));
+
 describe('Pico State Manager', () => {
 
-  it('provides reaction function', () => {
+  it('provides reaction function', async () => {
     const observable = new TestStore();
     const execute = spy((mode5, counter) => {
       if (mode5) {
@@ -22,6 +24,7 @@ describe('Pico State Manager', () => {
 
     for (let i = 0; i < 9; i++) {
       observable.toggleCheck();
+      await flush();
     }
 
     expect(execute.callCount).to.equal(1);
@@ -30,12 +33,13 @@ describe('Pico State Manager', () => {
 
     for (let i = 0; i < 9; i++) {
       observable.toggleCheck();
+      await flush();
     }
 
     expect(execute.callCount).to.equal(1);
   });
 
-  it('supports multi-target reaction', () => {
+  it('supports multi-target reaction', async () => {
     const a = new TestStore();
     const b = new TestStore();
 
@@ -57,6 +61,7 @@ describe('Pico State Manager', () => {
     // Change only A 9 times -> expect one execution at sum = 5
     for (let i = 0; i < 9; i++) {
       a.toggleCheck();
+      await flush();
     }
 
     expect(execute.callCount).to.equal(1);
@@ -66,6 +71,7 @@ describe('Pico State Manager', () => {
 
     for (let i = 0; i < 9; i++) {
       b.toggleCheck();
+      await flush();
     }
 
     expect(execute.callCount).to.equal(1);

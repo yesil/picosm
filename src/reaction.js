@@ -9,17 +9,18 @@ export function reaction(targetOrTargets, callback, execute, timeout) {
   const runner = () => {
     const props =
       targets.length === 1 ? callback(targets[0]) : callback(...targets);
-    if (lastProps === props) return;
-    let shouldExecute = false;
-    for (let i = 0; i < props.length; i++) {
-      if (lastProps[i] !== props[i]) {
-        shouldExecute = true;
-        break;
-      }
-    }
-    if (shouldExecute) {
+    if (props.length === 0) return;
+    if (lastProps.length !== props.length) {
       lastProps = props;
       execute(...props);
+      return;
+    }
+    for (let i = 0; i < props.length; i++) {
+      if (lastProps[i] !== props[i]) {
+        lastProps = props;
+        execute(...props);
+        return;
+      }
     }
   };
 

@@ -3,7 +3,8 @@ import { makeObservable, observe } from '../src/makeObservable.js';
 import { html, LitElement } from 'lit';
 import { makeLitObserver } from '../src/makeLitObserver.js';
 
-const wait = () => new Promise((resolve) => setTimeout(resolve, 200));
+const wait = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
+const flush = () => new Promise((r) => queueMicrotask(r));
 
 class User {
   static observableActions = ['setLastName'];
@@ -54,6 +55,7 @@ describe('LitOserver', () => {
     await helloWorld.updateComplete;
     expect(helloWorld.shadowRoot.textContent).to.equal('Hello, John !');
     helloWorld.user.setLastName('Doe');
+    await flush();
     await helloWorld.updateComplete;
     expect(helloWorld.shadowRoot.textContent).to.equal('Hello, John Doe!');
   });
@@ -66,9 +68,11 @@ describe('LitOserver', () => {
     helloWorldSlow.user = new User();
     await helloWorldSlow.updateComplete;
     helloWorldSlow.user.setLastName('D');
+    await flush();
     await helloWorldSlow.updateComplete;
     expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John D!');
     helloWorldSlow.user.setLastName('Doe');
+    await flush();
     await helloWorldSlow.updateComplete;
     expect(helloWorldSlow.shadowRoot.textContent).to.equal('Hello, John D!');
     await wait(200);

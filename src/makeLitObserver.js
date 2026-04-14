@@ -4,6 +4,7 @@ class ObserverController {
   constructor(host) {
     this.host = host;
     this.disposers = new Map();
+    this.observed = new Map();
     host.addController(this);
     const constructor = this.host.constructor;
     // Get the properties descriptor to check if it's a getter
@@ -35,6 +36,7 @@ class ObserverController {
       disposer();
     }
     this.disposers.clear();
+    this.observed.clear();
   }
 
   hostUpdate() {
@@ -50,17 +52,19 @@ class ObserverController {
   }
 
   setupObserver(propName, value, config) {
-    const oldDisposer = this.disposers.get(propName);
     const shouldObserve =
       config?.observe === true &&
       value !== null &&
       value !== undefined &&
       typeof value === 'object';
 
-    // Only dispose if we're not going to observe the new value
-    if (oldDisposer && !shouldObserve) {
-      oldDisposer();
+    const currentlyObserved = this.observed.get(propName);
+
+    // Dispose if value changed or we should no longer observe
+    if (currentlyObserved !== undefined && (currentlyObserved !== value || !shouldObserve)) {
+      this.disposers.get(propName)?.();
       this.disposers.delete(propName);
+      this.observed.delete(propName);
     }
 
     // Set up new observer if needed
@@ -68,6 +72,7 @@ class ObserverController {
       const callback = () => this.host.requestUpdate();
       const disposer = observe(value, callback, config.throttle);
       this.disposers.set(propName, disposer);
+      this.observed.set(propName, value);
     }
   }
 }

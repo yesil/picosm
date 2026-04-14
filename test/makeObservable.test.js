@@ -3,6 +3,8 @@ import { expect } from '@esm-bundle/chai';
 import { observe, subscribe, notify } from '../src/makeObservable.js';
 import TestStore from './TestStore.js';
 
+const flush = () => new Promise((r) => queueMicrotask(r));
+
 describe('Pico State Manager', () => {
   it('makes any class observable', () => {
     expect(TestStore.prototype.__notifyObservers).to.be.a('function');
@@ -20,16 +22,29 @@ describe('Pico State Manager', () => {
     expect(random3).to.equal(random2);
   });
 
-  it('provides observe function', () => {
+  it('provides observe function', async () => {
     const observer = fake();
     const observable = new TestStore();
     const disposer = observe(observable, observer);
     expect(observer.callCount).to.equal(0);
     observable.toggleCheck();
     observable.toggleCheck();
-    expect(observer.callCount).to.equal(2);
+    await flush();
+    expect(observer.callCount).to.equal(1);
     disposer();
     observable.toggleCheck();
+    await flush();
+    expect(observer.callCount).to.equal(1);
+  });
+
+  it('coalesces synchronous actions into a single notification', async () => {
+    const observer = fake();
+    const observable = new TestStore();
+    observe(observable, observer);
+    observable.toggleCheck();
+    await flush();
+    observable.toggleCheck();
+    await flush();
     expect(observer.callCount).to.equal(2);
   });
 
@@ -39,6 +54,7 @@ describe('Pico State Manager', () => {
     const disposer = observe(observable, observer);
     expect(observer.callCount).to.equal(0);
     await observable.toggleAsyncCheck();
+    await flush();
     expect(observer.callCount).to.equal(1);
     disposer();
   });

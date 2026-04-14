@@ -9,21 +9,19 @@ function instrumentAction(prototype, methodName) {
   if (descriptor && typeof descriptor.value === 'function') {
     const originalMethod = descriptor.value;
 
-    // Create a wrapper that maintains the original method's async/sync nature
-    descriptor.value =
-      originalMethod.constructor.name === 'AsyncFunction'
-        ? async function (...args) {
-            const response = await originalMethod.call(this, ...args);
-            this.__resetComputedProperties();
-            this.__notifyObservers();
-            return response;
-          }
-        : function (...args) {
-            const response = originalMethod.call(this, ...args);
-            this.__resetComputedProperties();
-            this.__notifyObservers();
-            return response;
-          };
+    descriptor.value = function (...args) {
+      const response = originalMethod.call(this, ...args);
+      if (response instanceof Promise) {
+        return response.then((value) => {
+          this.__resetComputedProperties();
+          this.__notifyObservers();
+          return value;
+        });
+      }
+      this.__resetComputedProperties();
+      this.__notifyObservers();
+      return response;
+    };
 
     Object.defineProperty(prototype, methodName, descriptor);
   }
@@ -85,9 +83,17 @@ function definePrivateProperty(instance, propertyName, initialValue) {
  * @param {Function} constructor - The class constructor to make observable
  */
 export function makeObservable(constructor) {
+  if (constructor.__observable) return;
+  constructor.__observable = true;
+
   Object.assign(constructor.prototype, {
     __notifyObservers() {
-      this.__observers?.forEach((listener) => listener());
+      if (this.__notifyScheduled) return;
+      this.__notifyScheduled = true;
+      queueMicrotask(() => {
+        this.__notifyScheduled = false;
+        this.__observers?.forEach((listener) => listener());
+      });
     },
 
     __resetComputedProperties() {
@@ -168,7 +174,7 @@ function observeSlow(target, callback, timeout) {
  * @returns {Function} Cleanup function to remove the observer
  */
 export function observe(target, callback, timeout) {
-  return timeout
+  return timeout != null && timeout > 0
     ? observeSlow(target, callback, timeout)
     : target.__observe(callback);
 }
