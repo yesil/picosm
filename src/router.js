@@ -172,18 +172,24 @@ export function createRouter() {
     },
   };
 
-  // Bound click handler for <a> event delegation
+  // Bound click handler for event delegation on elements with href
   router.go = (event) => {
-    const anchor = event.target.closest('a[href]');
-    if (!anchor) return;
-    if (anchor.origin !== window.location.origin) return;
+    const el = event.target.closest('[href]');
+    if (!el) return;
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
     if (event.button !== 0) return;
+    let url;
+    try {
+      url = new URL(el.getAttribute('href'), window.location.origin);
+    } catch {
+      return;
+    }
+    if (url.origin !== window.location.origin) return;
     event.preventDefault();
-    const path = anchor.pathname;
-    const query = parseQuery(anchor.search);
-    const hash = parseHash(anchor.hash);
-    router.navigate(path, { query, hash });
+    router.navigate(url.pathname, {
+      query: parseQuery(url.search),
+      hash: parseHash(url.hash),
+    });
   };
 
   return router;
