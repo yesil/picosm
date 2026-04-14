@@ -72,5 +72,5 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 - `src/track.js` — forward notifications between observables
 - `src/makeLitObserver.js` — LitElement integration via reactive controller
 - `src/router.js` — store-driven URL routing via History API (separate export: `picosm/router`)
-- `src/index.js` — barrel export (does not include router)
+- `src/index.js` — barrel export (includes router)
 - Tests are browser-based (web-test-runner), not Node
