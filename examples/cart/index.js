@@ -1,6 +1,6 @@
 import './App.js';
 import { Product, CartStore, FilterStore, ViewStore } from './model.js';
-import { createRouter } from '../../src/router.js';
+import { createRouter } from '../../dist/picosm.js';
 
 const products = [
   new Product('Sneakers', 89, 'shoes'),
@@ -20,21 +20,20 @@ viewStore.setProducts(products);
 
 const router = createRouter();
 
-// viewStore owns the path
+// viewStore owns the product query param
 router.register(viewStore, {
-  onRoute({ path }) {
-    const match = path.match(/^\/product\/(.+)$/);
-    if (match) {
-      viewStore.setView('detail', decodeURIComponent(match[1]));
+  onRoute({ query }) {
+    if (query.product) {
+      viewStore.setView('detail', query.product);
     } else {
       viewStore.setView('catalog', null);
     }
   },
   toURL() {
     if (viewStore.view === 'detail' && viewStore.productId) {
-      return { path: `/product/${encodeURIComponent(viewStore.productId)}` };
+      return { query: { product: viewStore.productId } };
     }
-    return { path: '/' };
+    return {};
   },
 });
 
@@ -49,7 +48,8 @@ router.register(filterStore, {
   toURL() {
     const query = {};
     if (filterStore.category) query.category = filterStore.category;
-    if (filterStore.sort && filterStore.sort !== 'name') query.sort = filterStore.sort;
+    if (filterStore.sort && filterStore.sort !== 'name')
+      query.sort = filterStore.sort;
     return { query, replace: true };
   },
 });
@@ -63,7 +63,7 @@ router.register(cartStore, {
     }
   },
   toURL() {
-    return { hash: cartStore.open ? { cart: 'open' } : {} };
+    return { hash: cartStore.open ? { cart: 'open' } : {}, replace: true };
   },
 });
 

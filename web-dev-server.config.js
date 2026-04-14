@@ -1,20 +1,14 @@
 const example = process.env.EXAMPLE || 'cart';
-const appIndex = `/examples/${example}/index.html`;
+const exampleBase = `/examples/${example}/`;
+const appIndex = `${exampleBase}index.html`;
 
 export default {
   rootDir: '.',
   open: appIndex,
   middleware: [
-    function rewriteToExample(ctx, next) {
-      // Serve the example index.html for / and any non-file paths (SPA fallback)
-      if (
-        ctx.url === '/' ||
-        (!ctx.url.includes('.') &&
-          !ctx.url.startsWith('/node_modules') &&
-          !ctx.url.startsWith('/dist') &&
-          !ctx.url.startsWith('/src') &&
-          !ctx.url.startsWith('/examples'))
-      ) {
+    function spaFallback(ctx, next) {
+      // SPA fallback: non-file requests under the example path serve index.html
+      if (ctx.url.startsWith(exampleBase) && !ctx.url.includes('.')) {
         ctx.url = appIndex;
       }
       return next();
