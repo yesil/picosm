@@ -1,7 +1,6 @@
 import { makeObservable } from '../../dist/picosm.js';
 
 class Product {
-
   static observableActions = ['setQuantity'];
   static computedProperties = ['total'];
 
@@ -52,6 +51,5 @@ class Store {
 }
 
 makeObservable(Store);
-
 
 export { Product, Store };

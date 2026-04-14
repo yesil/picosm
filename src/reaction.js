@@ -10,7 +10,7 @@ export function reaction(targetOrTargets, callback, execute, timeout) {
     const props =
       targets.length === 1 ? callback(targets[0]) : callback(...targets);
     if (props.length === 0) return;
-    if (lastProps.length !== props.length) {
+    if (lastProps.length > 0 && lastProps.length !== props.length) {
       lastProps = props;
       execute(...props);
       return;

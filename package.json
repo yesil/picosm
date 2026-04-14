@@ -1,6 +1,6 @@
 {
   "name": "picosm",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "main": "dist/picosm.js",
   "module": "dist/picosm.js",
   "types": "dist/index.d.ts",
