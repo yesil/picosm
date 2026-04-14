@@ -1,7 +1,10 @@
 import '@spectrum-web-components/badge/sp-badge.js';
 import '@spectrum-web-components/button/sp-button.js';
 import '@spectrum-web-components/card/sp-card.js';
+import '@spectrum-web-components/field-label/sp-field-label.js';
+import '@spectrum-web-components/menu/sp-menu-item.js';
 import '@spectrum-web-components/number-field/sp-number-field.js';
+import '@spectrum-web-components/picker/sp-picker.js';
 import '@spectrum-web-components/table/sp-table-body.js';
 import '@spectrum-web-components/table/sp-table-cell.js';
 import '@spectrum-web-components/table/sp-table-checkbox-cell.js';

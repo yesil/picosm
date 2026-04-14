@@ -150,25 +150,27 @@ export function createRouter() {
     },
 
     async navigate(path, opts) {
-      const query = opts?.query || {};
-      const hash = opts?.hash || {};
-      const parsed = { path, query, hash };
-      if (!(await checkGuards(parsed))) return;
-      const url = buildURL(parsed);
+      const merged = buildMergedURL();
+      merged.path = path;
+      if (opts?.query) Object.assign(merged.query, opts.query);
+      if (opts?.hash) Object.assign(merged.hash, opts.hash);
+      if (!(await checkGuards(merged))) return;
+      const url = buildURL(merged);
       currentURL = url;
       history.pushState(null, '', url);
-      notifyStores(parsed);
+      notifyStores(merged);
     },
 
     async replace(path, opts) {
-      const query = opts?.query || {};
-      const hash = opts?.hash || {};
-      const parsed = { path, query, hash };
-      if (!(await checkGuards(parsed))) return;
-      const url = buildURL(parsed);
+      const merged = buildMergedURL();
+      merged.path = path;
+      if (opts?.query) Object.assign(merged.query, opts.query);
+      if (opts?.hash) Object.assign(merged.hash, opts.hash);
+      if (!(await checkGuards(merged))) return;
+      const url = buildURL(merged);
       currentURL = url;
       history.replaceState(null, '', url);
-      notifyStores(parsed);
+      notifyStores(merged);
     },
 
     back() {

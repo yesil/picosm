@@ -19,7 +19,7 @@ npm install picosm
 
 ## Demos
 
-- [Shopping cart](https://yesil.github.io/picosm/examples/cart/index.html) — Lit + Spectrum Web Components
+- [Shopping cart](https://yesil.github.io/picosm/examples/cart/index.html) — Lit + Spectrum Web Components + Router (filters, product detail, cart drawer)
 - [Stars canvas](https://yesil.github.io/picosm/examples/stars/index.html) — debounced observer + tracking connected stars (use metakey to connect)
 - [Minigame](https://yesil.github.io/picosm/examples/minigame/index.html)
 
