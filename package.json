@@ -10,6 +10,11 @@
       "import": "./dist/picosm.js",
       "default": "./dist/picosm.js"
     },
+    "./router": {
+      "types": "./dist/router.d.ts",
+      "import": "./src/router.js",
+      "default": "./src/router.js"
+    },
     "./src/*": "./src/*"
   },
   "scripts": {

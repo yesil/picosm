@@ -2,8 +2,6 @@
 
 Lightweight, zero-dependency state manager that replicates core MobX features without using Proxy objects.
 
-**~1.2 KB** gzipped
-
 ```bash
 npm install picosm
 ```
@@ -16,6 +14,7 @@ npm install picosm
 - **Computed caching** — getter values are cached until invalidated by an action
 - **Throttled observe** — built-in throttling for high-frequency updates
 - **Lit integration** — `makeLitObserver` wires observable properties to `requestUpdate` automatically
+- **Store-driven routing** — `createRouter` syncs multiple stores with the browser History API
 - **Tree-shakeable** — import only what you need from individual modules
 
 ## Demos
@@ -195,6 +194,111 @@ makeObservable(Store);
 ```
 
 Intermediate state changes within an async action are not observable until the action completes. If you need to notify observers mid-action, split it into separate actions.
+
+## Router
+
+`createRouter` coordinates multiple stores with the browser History API. Each store registers itself and decides what part of the URL it owns. The router parses and serializes query/hash as objects — stores never touch strings.
+
+```javascript
+import { createRouter } from 'picosm/router';
+
+const router = createRouter();
+```
+
+### Registering stores
+
+```javascript
+// appStore owns the path
+router.register(appStore, {
+  onRoute({ path }) {
+    if (path === '/') appStore.setRoute('home');
+    else if (path.startsWith('/users')) appStore.setRoute('users');
+  },
+  toURL() {
+    return { path: appStore.path };
+  },
+});
+
+// searchStore owns query params
+router.register(searchStore, {
+  onRoute({ query }) {
+    searchStore.setFilters(query);
+  },
+  toURL() {
+    return { query: searchStore.filters };
+  },
+});
+```
+
+Each `register` call returns a disposer. All options are optional:
+- `onRoute({ path, query, hash })` — URL to store. Called on registration, navigate, replace, and popstate.
+- `toURL()` — store to URL. Returns `{ path?, query?, hash?, replace? }`. The router merges results from all stores and syncs to the browser.
+- `before({ path, query, hash })` — navigation guard. Return `false` or `Promise<false>` to block navigation.
+
+Each store's `toURL` result is cached. When a store changes, only that store's `toURL` is called — the URL is rebuilt from all cached results. Removed keys disappear cleanly. If `toURL` returns `replace: true`, the router uses `replaceState` instead of `pushState`. Each store controls its own history behavior:
+
+```javascript
+// Filter changes replace the current history entry
+router.register(filterStore, {
+  onRoute({ query }) { filterStore.setFilters(query); },
+  toURL() {
+    return { query: filterStore.filters, replace: true };
+  },
+});
+
+// Page navigation pushes a new history entry
+router.register(appStore, {
+  onRoute({ path }) { appStore.setRoute(path); },
+  toURL() {
+    return { path: appStore.path };
+  },
+});
+```
+
+### Navigation
+
+```javascript
+router.navigate('/users/42');
+router.navigate('/users/42', { query: { tab: 'posts' }, hash: { section: 'top' } });
+router.replace('/login');
+router.back();
+router.forward();
+router.destroy();
+```
+
+### Event delegation
+
+`router.go` is a bound click handler for `<a>` elements. One handler on a parent, works for all links via event delegation:
+
+```javascript
+html`
+  <nav @click=${router.go}>
+    <a href="/">Home</a>
+    <a href="/users">Users</a>
+    <a href="https://external.com">External</a>
+  </nav>
+`
+```
+
+Skips external links, respects cmd/ctrl+click for new tab, reads `href` from any element — works with `<a>`, `<sp-button href="...">`, or any custom element.
+
+### Navigation guards
+
+Stores can register a `before` hook to block navigation when state is dirty. Guards support async — use a custom modal instead of `confirm()`:
+
+```javascript
+router.register(formStore, {
+  onRoute({ path }) { formStore.setRoute(path); },
+  async before({ path, query, hash }) {
+    if (formStore.isDirty) {
+      return await showConfirmDialog('You have unsaved changes. Leave?');
+    }
+    return true;
+  },
+});
+```
+
+Guards run sequentially — the first `false` short-circuits, no further guards are called. For browser back/forward, the guard runs after the URL changes and pushes the old URL back if rejected.
 
 ## Contributing
 

@@ -39,6 +39,8 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 | Lit integration | N/A (MobX uses `observer()` HOC for React) | `makeLitObserver(MyElement)` + `observe: true` in properties |
 | Async actions | `runInAction()` inside async methods | Just list the method in `observableActions` — picosm detects the returned Promise |
 
+**Routing:** picosm does NOT use centralized route config like `react-router` or `@vaadin/router`. Instead: `createRouter()` + `router.register(store, { onRoute, toURL, before })` — each store registers itself and owns its URL segment.
+
 ## Critical rules for generating picosm code
 
 1. **No decorators** — picosm does not use `@observable`, `@action`, `@computed`, or any decorator syntax
@@ -52,10 +54,25 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 9. **Notifications are batched via microtask** — observers fire asynchronously after the current synchronous block completes
 10. **`observe` and `reaction` accept an optional `timeout` parameter** for throttling (milliseconds)
 
+## Critical rules for router code
+
+1. **No central route map** — each store registers itself and handles its own matching logic
+2. **`createRouter()` takes no arguments** — the router is created clean, stores register after
+3. **`router.register` returns a disposer** — always clean up when a store is no longer needed
+4. **`onRoute` receives objects** — `{ path, query, hash }` where query and hash are parsed objects, never strings
+5. **`toURL` results are cached** — only the changed store's `toURL` is called; URL is rebuilt from all cached results
+6. **`router.go` is a property, not a method call** — bound click handler, same reference every render
+7. **Stores own the state, URL is a side effect** — components observe stores, not the router
+8. **`toURL` can return `replace: true`** — uses `replaceState` instead of `pushState` for store-triggered URL changes (e.g., filters)
+9. **`before` is an async navigation guard** — returns `boolean` or `Promise<boolean>`, first `false` short-circuits
+10. **`navigate` and `replace` are async** — they await `before` guards before proceeding
+11. **Browser back/forward cannot be prevented** — the router detects via `popstate` and pushes the old URL back if a guard rejects
+
 ## Architecture
 - `src/makeObservable.js` — core: action instrumentation, computed caching, observe, subscribe/notify
 - `src/reaction.js` — selective reaction to specific value changes
 - `src/track.js` — forward notifications between observables
 - `src/makeLitObserver.js` — LitElement integration via reactive controller
-- `src/index.js` — barrel export
+- `src/router.js` — store-driven URL routing via History API (separate export: `picosm/router`)
+- `src/index.js` — barrel export (includes router)
 - Tests are browser-based (web-test-runner), not Node
