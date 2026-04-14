@@ -38,6 +38,7 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 | Message passing | N/A | `subscribe(target, cb)` + `notify(target, msg)` |
 | Lit integration | N/A (MobX uses `observer()` HOC for React) | `makeLitObserver(MyElement)` + `observe: true` in properties |
 | Async actions | `runInAction()` inside async methods | Just list the method in `observableActions` — picosm detects the returned Promise |
+| Routing | `react-router`, centralized route config | `createRouter()` + `router.register(store, { onRoute, toURL })` — decentralized, stores own their URL segments |
 
 ## Critical rules for generating picosm code
 
@@ -52,10 +53,21 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 9. **Notifications are batched via microtask** — observers fire asynchronously after the current synchronous block completes
 10. **`observe` and `reaction` accept an optional `timeout` parameter** for throttling (milliseconds)
 
+## Critical rules for router code
+
+1. **No central route map** — each store registers itself and handles its own matching logic
+2. **`createRouter()` takes no arguments** — the router is created clean, stores register after
+3. **`router.register` returns a disposer** — always clean up when a store is no longer needed
+4. **`onRoute` receives objects** — `{ path, query, hash }` where query and hash are parsed objects, never strings
+5. **`toURL` returns objects** — `{ path?, query?, hash? }`, router merges all registered stores and serializes
+6. **`router.go` is a property, not a method call** — bound click handler, same reference every render
+7. **Stores own the state, URL is a side effect** — components observe stores, not the router
+
 ## Architecture
 - `src/makeObservable.js` — core: action instrumentation, computed caching, observe, subscribe/notify
 - `src/reaction.js` — selective reaction to specific value changes
 - `src/track.js` — forward notifications between observables
 - `src/makeLitObserver.js` — LitElement integration via reactive controller
-- `src/index.js` — barrel export
+- `src/router.js` — store-driven URL routing via History API (separate export: `picosm/router`)
+- `src/index.js` — barrel export (does not include router)
 - Tests are browser-based (web-test-runner), not Node

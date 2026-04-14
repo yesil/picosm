@@ -16,6 +16,7 @@ npm install picosm
 - **Computed caching** — getter values are cached until invalidated by an action
 - **Throttled observe** — built-in throttling for high-frequency updates
 - **Lit integration** — `makeLitObserver` wires observable properties to `requestUpdate` automatically
+- **Store-driven routing** — `createRouter` syncs multiple stores with the browser History API
 - **Tree-shakeable** — import only what you need from individual modules
 
 ## Demos
@@ -195,6 +196,72 @@ makeObservable(Store);
 ```
 
 Intermediate state changes within an async action are not observable until the action completes. If you need to notify observers mid-action, split it into separate actions.
+
+## Router
+
+`createRouter` coordinates multiple stores with the browser History API. Each store registers itself and decides what part of the URL it owns. The router parses and serializes query/hash as objects — stores never touch strings.
+
+```javascript
+import { createRouter } from 'picosm/router';
+
+const router = createRouter();
+```
+
+### Registering stores
+
+```javascript
+// appStore owns the path
+router.register(appStore, {
+  onRoute({ path }) {
+    if (path === '/') appStore.setRoute('home');
+    else if (path.startsWith('/users')) appStore.setRoute('users');
+  },
+  toURL() {
+    return { path: appStore.path };
+  },
+});
+
+// searchStore owns query params
+router.register(searchStore, {
+  onRoute({ query }) {
+    searchStore.setFilters(query);
+  },
+  toURL() {
+    return { query: searchStore.filters };
+  },
+});
+```
+
+Each `register` call returns a disposer. Both `onRoute` and `toURL` are optional:
+- `onRoute({ path, query, hash })` — URL to store. Called on registration, navigate, replace, and popstate.
+- `toURL()` — store to URL. Returns `{ path?, query?, hash? }`. The router merges results from all stores and pushes to the browser.
+
+### Navigation
+
+```javascript
+router.navigate('/users/42');
+router.navigate('/users/42', { query: { tab: 'posts' }, hash: { section: 'top' } });
+router.replace('/login');
+router.back();
+router.forward();
+router.destroy();
+```
+
+### Event delegation
+
+`router.go` is a bound click handler for `<a>` elements. One handler on a parent, works for all links via event delegation:
+
+```javascript
+html`
+  <nav @click=${router.go}>
+    <a href="/">Home</a>
+    <a href="/users">Users</a>
+    <a href="https://external.com">External</a>
+  </nav>
+`
+```
+
+Skips external links, respects cmd/ctrl+click for new tab, reads `href` from the anchor — real `<a>` elements with real `href` attributes.
 
 ## Contributing
 
