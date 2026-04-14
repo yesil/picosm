@@ -76,20 +76,6 @@ export function createRouter() {
     }
   }
 
-  function collectURL() {
-    const merged = { path: '/', query: {}, hash: {} };
-    let replace = false;
-    for (const reg of registrations) {
-      if (!reg.toURL) continue;
-      const part = reg.toURL();
-      if (part.path != null) merged.path = part.path;
-      if (part.query) Object.assign(merged.query, part.query);
-      if (part.hash) Object.assign(merged.hash, part.hash);
-      if (part.replace) replace = true;
-    }
-    return { ...merged, replace };
-  }
-
   function syncURL(url, replace) {
     if (url !== currentURL) {
       currentURL = url;
@@ -101,10 +87,14 @@ export function createRouter() {
     }
   }
 
-  function onStoreChange() {
-    const merged = collectURL();
-    const url = buildURL(merged);
-    syncURL(url, merged.replace);
+  function onStoreChange(reg) {
+    const current = parseURL();
+    const part = reg.toURL();
+    if (part.path != null) current.path = part.path;
+    if (part.query) Object.assign(current.query, part.query);
+    if (part.hash) Object.assign(current.hash, part.hash);
+    const url = buildURL(current);
+    syncURL(url, !!part.replace);
   }
 
   async function onPopState() {
@@ -137,7 +127,7 @@ export function createRouter() {
       registrations.push(reg);
 
       if (options.toURL) {
-        reg.disposer = observe(store, onStoreChange);
+        reg.disposer = observe(store, () => onStoreChange(reg));
       }
 
       // Notify this store with current URL on registration

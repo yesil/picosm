@@ -235,7 +235,7 @@ Each `register` call returns a disposer. All options are optional:
 - `toURL()` — store to URL. Returns `{ path?, query?, hash?, replace? }`. The router merges results from all stores and syncs to the browser.
 - `before({ path, query, hash })` — navigation guard. Return `false` or `Promise<false>` to block navigation.
 
-When `toURL` returns `replace: true`, the router uses `replaceState` instead of `pushState` — the URL updates without adding a history entry. Useful for filter changes that shouldn't require pressing Back through each tweak:
+When a store changes, the router calls `toURL` only on **that store** and merges its piece into the current URL. If `toURL` returns `replace: true`, the router uses `replaceState` instead of `pushState` — the URL updates without adding a history entry. Each store controls its own history behavior:
 
 ```javascript
 // Filter changes replace the current history entry
