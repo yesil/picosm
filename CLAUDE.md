@@ -38,7 +38,8 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 | Message passing | N/A | `subscribe(target, cb)` + `notify(target, msg)` |
 | Lit integration | N/A (MobX uses `observer()` HOC for React) | `makeLitObserver(MyElement)` + `observe: true` in properties |
 | Async actions | `runInAction()` inside async methods | Just list the method in `observableActions` — picosm detects the returned Promise |
-| Routing | `react-router`, centralized route config | `createRouter()` + `router.register(store, { onRoute, toURL })` — decentralized, stores own their URL segments |
+
+**Routing:** picosm does NOT use centralized route config like `react-router` or `@vaadin/router`. Instead: `createRouter()` + `router.register(store, { onRoute, toURL, before })` — each store registers itself and owns its URL segment.
 
 ## Critical rules for generating picosm code
 
