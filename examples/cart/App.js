@@ -255,7 +255,7 @@ export class App extends LitElement {
             <sp-card
               heading="${product.title}"
               subheading="$${product.price}"
-              @click=${() => this.router.navigate(`/product/${encodeURIComponent(product.title)}`)}
+              @click=${() => this.router.navigate(window.location.pathname, { query: { product: product.title } })}
             >
               <img
                 slot="preview"
@@ -300,7 +300,7 @@ export class App extends LitElement {
       return html`
         <div class="detail-view">
           <p>Product not found: ${productId}</p>
-          <sp-button @click=${() => this.router.navigate('/')}>Back to catalog</sp-button>
+          <sp-button @click=${() => this.viewStore.setView('catalog', null)}>Back to catalog</sp-button>
         </div>
       `;
     }
@@ -308,7 +308,7 @@ export class App extends LitElement {
     return html`
       <div class="detail-view">
         <div class="detail-header">
-          <sp-button variant="secondary" @click=${() => this.router.navigate('/')}>Back</sp-button>
+          <sp-button variant="secondary" @click=${() => this.viewStore.setView('catalog', null)}>Back</sp-button>
           <h2>${product.title}</h2>
           <sp-badge variant="informative">${product.category}</sp-badge>
         </div>

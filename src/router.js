@@ -88,7 +88,7 @@ export function createRouter() {
   }
 
   function buildMergedURL() {
-    const merged = { path: '/', query: {}, hash: {} };
+    const merged = { path: window.location.pathname, query: {}, hash: {} };
     for (const r of registrations) {
       if (!r.cachedURL) continue;
       if (r.cachedURL.path != null) merged.path = r.cachedURL.path;
