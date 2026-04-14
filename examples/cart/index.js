@@ -1,11 +1,74 @@
 import './App.js';
-import { Product } from './model.js';
+import { Product, CartStore, FilterStore, ViewStore } from './model.js';
+import { createRouter } from '../../src/router.js';
 
 const products = [
-  new Product('Product A', 10),
-  new Product('Product B', 15),
-  new Product('Product C', 22),
+  new Product('Sneakers', 89, 'shoes'),
+  new Product('Boots', 120, 'shoes'),
+  new Product('T-Shirt', 25, 'shirts'),
+  new Product('Hoodie', 65, 'shirts'),
+  new Product('Watch', 199, 'accessories'),
+  new Product('Sunglasses', 45, 'accessories'),
 ];
 
+const cartStore = new CartStore();
+cartStore.products = products;
+
+const filterStore = new FilterStore();
+const viewStore = new ViewStore();
+viewStore.setProducts(products);
+
+const router = createRouter();
+
+// viewStore owns the path
+router.register(viewStore, {
+  onRoute({ path }) {
+    const match = path.match(/^\/product\/(.+)$/);
+    if (match) {
+      viewStore.setView('detail', decodeURIComponent(match[1]));
+    } else {
+      viewStore.setView('catalog', null);
+    }
+  },
+  toURL() {
+    if (viewStore.view === 'detail' && viewStore.productId) {
+      return { path: `/product/${encodeURIComponent(viewStore.productId)}` };
+    }
+    return { path: '/' };
+  },
+});
+
+// filterStore owns category and sort query params (replace: true)
+router.register(filterStore, {
+  onRoute({ query }) {
+    filterStore.setFilters({
+      category: query.category,
+      sort: query.sort,
+    });
+  },
+  toURL() {
+    const query = {};
+    if (filterStore.category) query.category = filterStore.category;
+    if (filterStore.sort && filterStore.sort !== 'name') query.sort = filterStore.sort;
+    return { query, replace: true };
+  },
+});
+
+// cartStore owns the hash (cart drawer open/closed)
+router.register(cartStore, {
+  onRoute({ hash }) {
+    const shouldBeOpen = hash.cart === 'open';
+    if (shouldBeOpen !== cartStore.open) {
+      cartStore.toggleCart();
+    }
+  },
+  toURL() {
+    return { hash: cartStore.open ? { cart: 'open' } : {} };
+  },
+});
+
 const app = document.querySelector('pico-demo');
-app.store.setProducts(products);
+app.cartStore = cartStore;
+app.filterStore = filterStore;
+app.viewStore = viewStore;
+app.router = router;

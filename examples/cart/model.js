@@ -7,10 +7,12 @@ class Product {
   title = '';
   price = 0;
   quantity = 0;
+  category = '';
 
-  constructor(title, price) {
+  constructor(title, price, category) {
     this.title = title;
     this.price = price;
+    this.category = category;
   }
 
   get total() {
@@ -23,13 +25,13 @@ class Product {
 }
 makeObservable(Product);
 
-class Store {
-  static observableActions = ['setProducts', 'addToCart', 'updateQuantity'];
-  static computedProperties = ['total'];
+class CartStore {
+  static observableActions = ['addToCart', 'updateQuantity', 'toggleCart'];
+  static computedProperties = ['total', 'count'];
 
-  setProducts(products) {
-    this.products = products;
-  }
+  products = [];
+  lastProduct = null;
+  open = false;
 
   addToCart(product) {
     this.lastProduct = product;
@@ -41,15 +43,60 @@ class Store {
     product.setQuantity(Math.max(value || 0, 0));
   }
 
+  toggleCart() {
+    this.open = !this.open;
+  }
+
   get total() {
     return this.products
       .filter((p) => p.quantity > 0)
-      .reduce((total, product) => {
-        return total + product.total;
-      }, 0);
+      .reduce((total, product) => total + product.total, 0);
+  }
+
+  get count() {
+    return this.products.filter((p) => p.quantity > 0).length;
   }
 }
+makeObservable(CartStore);
 
-makeObservable(Store);
+class FilterStore {
+  static observableActions = ['setFilters', 'setFilter', 'clearFilters'];
 
-export { Product, Store };
+  category = '';
+  sort = 'name';
+
+  setFilters({ category, sort }) {
+    this.category = category || '';
+    this.sort = sort || 'name';
+  }
+
+  setFilter(key, value) {
+    this[key] = value;
+  }
+
+  clearFilters() {
+    this.category = '';
+    this.sort = 'name';
+  }
+}
+makeObservable(FilterStore);
+
+class ViewStore {
+  static observableActions = ['setView', 'setProducts'];
+
+  view = 'catalog';
+  productId = null;
+  products = [];
+
+  setProducts(products) {
+    this.products = products;
+  }
+
+  setView(view, productId) {
+    this.view = view;
+    this.productId = productId || null;
+  }
+}
+makeObservable(ViewStore);
+
+export { Product, CartStore, FilterStore, ViewStore };
