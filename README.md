@@ -2,7 +2,7 @@
 
 Lightweight, zero-dependency state manager that replicates core MobX features without using Proxy objects.
 
-**~1.2 KB** gzipped | **3.5 KB** minified | **7.4 KB** source
+**~1.2 KB** gzipped
 
 ```bash
 npm install picosm
