@@ -60,7 +60,7 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 2. **`createRouter()` takes no arguments** — the router is created clean, stores register after
 3. **`router.register` returns a disposer** — always clean up when a store is no longer needed
 4. **`onRoute` receives objects** — `{ path, query, hash }` where query and hash are parsed objects, never strings
-5. **`toURL` returns objects** — `{ path?, query?, hash? }`, router merges all registered stores and serializes
+5. **`toURL` results are cached** — only the changed store's `toURL` is called; URL is rebuilt from all cached results
 6. **`router.go` is a property, not a method call** — bound click handler, same reference every render
 7. **Stores own the state, URL is a side effect** — components observe stores, not the router
 8. **`toURL` can return `replace: true`** — uses `replaceState` instead of `pushState` for store-triggered URL changes (e.g., filters)

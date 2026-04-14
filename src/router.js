@@ -87,14 +87,21 @@ export function createRouter() {
     }
   }
 
+  function buildMergedURL() {
+    const merged = { path: '/', query: {}, hash: {} };
+    for (const r of registrations) {
+      if (!r.cachedURL) continue;
+      if (r.cachedURL.path != null) merged.path = r.cachedURL.path;
+      if (r.cachedURL.query) Object.assign(merged.query, r.cachedURL.query);
+      if (r.cachedURL.hash) Object.assign(merged.hash, r.cachedURL.hash);
+    }
+    return merged;
+  }
+
   function onStoreChange(reg) {
-    const current = parseURL();
-    const part = reg.toURL();
-    if (part.path != null) current.path = part.path;
-    if (part.query) Object.assign(current.query, part.query);
-    if (part.hash) Object.assign(current.hash, part.hash);
-    const url = buildURL(current);
-    syncURL(url, !!part.replace);
+    reg.cachedURL = reg.toURL();
+    const url = buildURL(buildMergedURL());
+    syncURL(url, !!reg.cachedURL.replace);
   }
 
   async function onPopState() {
@@ -121,12 +128,14 @@ export function createRouter() {
         onRoute: options.onRoute,
         toURL: options.toURL,
         before: options.before,
+        cachedURL: null,
         disposer: null,
       };
 
       registrations.push(reg);
 
       if (options.toURL) {
+        reg.cachedURL = options.toURL();
         reg.disposer = observe(store, () => onStoreChange(reg));
       }
 
