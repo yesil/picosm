@@ -33,7 +33,5 @@ typings/
 .eslintcache
 
 meta.json
-dist/picosm.js
-dist/meta.json
 
 *.tgz
