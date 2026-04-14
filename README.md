@@ -232,9 +232,10 @@ router.register(searchStore, {
 });
 ```
 
-Each `register` call returns a disposer. Both `onRoute` and `toURL` are optional:
+Each `register` call returns a disposer. All options are optional:
 - `onRoute({ path, query, hash })` — URL to store. Called on registration, navigate, replace, and popstate.
 - `toURL()` — store to URL. Returns `{ path?, query?, hash? }`. The router merges results from all stores and pushes to the browser.
+- `before({ path, query, hash })` — navigation guard. Return `false` or `Promise<false>` to block navigation.
 
 ### Navigation
 
@@ -261,7 +262,25 @@ html`
 `
 ```
 
-Skips external links, respects cmd/ctrl+click for new tab, reads `href` from the anchor — real `<a>` elements with real `href` attributes.
+Skips external links, respects cmd/ctrl+click for new tab, reads `href` from any element — works with `<a>`, `<sp-button href="...">`, or any custom element.
+
+### Navigation guards
+
+Stores can register a `before` hook to block navigation when state is dirty. Guards support async — use a custom modal instead of `confirm()`:
+
+```javascript
+router.register(formStore, {
+  onRoute({ path }) { formStore.setRoute(path); },
+  async before({ path, query, hash }) {
+    if (formStore.isDirty) {
+      return await showConfirmDialog('You have unsaved changes. Leave?');
+    }
+    return true;
+  },
+});
+```
+
+Guards run sequentially — the first `false` short-circuits, no further guards are called. For browser back/forward, the guard runs after the URL changes and pushes the old URL back if rejected.
 
 ## Contributing
 
