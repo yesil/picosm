@@ -11,6 +11,7 @@ class TestStore {
   path = '';
   route = null;
   filters = {};
+  isDirty = false;
 
   setRoute(path, route) {
     this.path = path;
@@ -56,13 +57,13 @@ describe('Router', () => {
     expect(onRoute.firstCall.args[0]).to.have.property('hash');
   });
 
-  it('calls onRoute on navigate', () => {
+  it('calls onRoute on navigate', async () => {
     router = createRouter();
     const onRoute = spy();
     const store = new TestStore();
     router.register(store, { onRoute });
 
-    router.navigate('/test-path', { query: { foo: 'bar' } });
+    await router.navigate('/test-path', { query: { foo: 'bar' } });
 
     expect(onRoute.callCount).to.equal(2); // registration + navigate
     const data = onRoute.secondCall.args[0];
@@ -71,13 +72,13 @@ describe('Router', () => {
     expect(data.hash).to.deep.equal({});
   });
 
-  it('calls onRoute on replace', () => {
+  it('calls onRoute on replace', async () => {
     router = createRouter();
     const onRoute = spy();
     const store = new TestStore();
     router.register(store, { onRoute });
 
-    router.replace('/replaced', { query: { a: '1' }, hash: { section: 'top' } });
+    await router.replace('/replaced', { query: { a: '1' }, hash: { section: 'top' } });
 
     expect(onRoute.callCount).to.equal(2);
     const data = onRoute.secondCall.args[0];
@@ -86,22 +87,22 @@ describe('Router', () => {
     expect(data.hash).to.deep.equal({ section: 'top' });
   });
 
-  it('register returns a disposer', () => {
+  it('register returns a disposer', async () => {
     router = createRouter();
     const onRoute = spy();
     const store = new TestStore();
     const dispose = router.register(store, { onRoute });
 
-    router.navigate('/before');
+    await router.navigate('/before');
     expect(onRoute.callCount).to.equal(2);
 
     dispose();
 
-    router.navigate('/after');
+    await router.navigate('/after');
     expect(onRoute.callCount).to.equal(2); // not called again
   });
 
-  it('supports multiple store registrations', () => {
+  it('supports multiple store registrations', async () => {
     router = createRouter();
     const onRouteA = spy();
     const onRouteB = spy();
@@ -111,7 +112,7 @@ describe('Router', () => {
     router.register(storeA, { onRoute: onRouteA });
     router.register(storeB, { onRoute: onRouteB });
 
-    router.navigate('/multi');
+    await router.navigate('/multi');
 
     expect(onRouteA.callCount).to.equal(2);
     expect(onRouteB.callCount).to.equal(2);
@@ -140,10 +141,9 @@ describe('Router', () => {
       },
     });
 
-    router.navigate('/products', { query: { category: 'shoes' } });
+    await router.navigate('/products', { query: { category: 'shoes' } });
     await flush();
 
-    // Both stores should have their state
     expect(storeA.path).to.equal('/products');
     expect(storeB.filters).to.deep.equal({ category: 'shoes' });
   });
@@ -161,21 +161,20 @@ describe('Router', () => {
       },
     });
 
-    // Store action triggers URL update
     store.setFilters({ color: 'red' });
-    await flush(); // microtask for observer notification
-    await flush(); // microtask for pushState
+    await flush();
+    await flush();
 
     expect(window.location.search).to.include('color=red');
   });
 
-  it('handles navigate with query and hash objects', () => {
+  it('handles navigate with query and hash objects', async () => {
     router = createRouter();
     const onRoute = spy();
     const store = new TestStore();
     router.register(store, { onRoute });
 
-    router.navigate('/path', {
+    await router.navigate('/path', {
       query: { key: 'value', other: 'data' },
       hash: { section: 'main', mode: 'edit' },
     });
@@ -198,16 +197,155 @@ describe('Router', () => {
     expect(navigateSpy.callCount).to.equal(0);
   });
 
-  it('destroy removes all registrations', () => {
+  it('destroy removes all registrations', async () => {
     router = createRouter();
     const onRoute = spy();
     const store = new TestStore();
     router.register(store, { onRoute });
 
     router.destroy();
-    router.navigate('/after-destroy');
+    await router.navigate('/after-destroy');
 
-    // onRoute only called once (at registration), not after destroy
     expect(onRoute.callCount).to.equal(1);
+  });
+
+  // Navigation guard tests
+
+  it('before guard blocks navigate when returning false', async () => {
+    router = createRouter();
+    const onRoute = spy();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute,
+      before() {
+        return false;
+      },
+    });
+
+    await router.navigate('/blocked');
+
+    // onRoute called once (registration), not for navigate
+    expect(onRoute.callCount).to.equal(1);
+  });
+
+  it('before guard allows navigate when returning true', async () => {
+    router = createRouter();
+    const onRoute = spy();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute,
+      before() {
+        return true;
+      },
+    });
+
+    await router.navigate('/allowed');
+
+    expect(onRoute.callCount).to.equal(2);
+    expect(onRoute.secondCall.args[0].path).to.equal('/allowed');
+  });
+
+  it('before guard supports async (Promise)', async () => {
+    router = createRouter();
+    const onRoute = spy();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute,
+      async before() {
+        return false;
+      },
+    });
+
+    await router.navigate('/blocked');
+
+    expect(onRoute.callCount).to.equal(1);
+  });
+
+  it('before guard blocks replace', async () => {
+    router = createRouter();
+    const onRoute = spy();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute,
+      before() {
+        return false;
+      },
+    });
+
+    await router.replace('/blocked');
+
+    expect(onRoute.callCount).to.equal(1);
+  });
+
+  it('before guard receives destination route data', async () => {
+    router = createRouter();
+    const beforeSpy = spy(() => true);
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute() {},
+      before: beforeSpy,
+    });
+
+    await router.navigate('/dest', { query: { a: '1' }, hash: { b: '2' } });
+
+    const dest = beforeSpy.firstCall.args[0];
+    expect(dest.path).to.equal('/dest');
+    expect(dest.query).to.deep.equal({ a: '1' });
+    expect(dest.hash).to.deep.equal({ b: '2' });
+  });
+
+  it('first guard rejection short-circuits — no further guards called', async () => {
+    router = createRouter();
+    const storeA = new TestStore();
+    const storeB = new TestStore();
+    const guardB = spy(() => true);
+
+    router.register(storeA, {
+      onRoute() {},
+      before() {
+        return false;
+      },
+    });
+
+    router.register(storeB, {
+      onRoute() {},
+      before: guardB,
+    });
+
+    await router.navigate('/blocked');
+
+    expect(guardB.callCount).to.equal(0);
+  });
+
+  it('disposed store guard is no longer checked', async () => {
+    router = createRouter();
+    const onRoute = spy();
+    const guardStore = new TestStore();
+    const mainStore = new TestStore();
+
+    const dispose = router.register(guardStore, {
+      onRoute() {},
+      before() {
+        return false;
+      },
+    });
+
+    router.register(mainStore, { onRoute });
+
+    // Guard blocks
+    await router.navigate('/blocked');
+    expect(onRoute.callCount).to.equal(1);
+
+    // Remove guard
+    dispose();
+
+    // Now navigation succeeds
+    await router.navigate('/allowed');
+    expect(onRoute.callCount).to.equal(2);
   });
 });

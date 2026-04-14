@@ -17,15 +17,17 @@ export interface RegisterOptions {
   onRoute?: (data: RouteData) => void;
   /** Returns the store's contribution to the URL. Router merges all results. */
   toURL?: () => URLParts;
+  /** Navigation guard. Return false (or Promise<false>) to block navigation. Guards run sequentially — first rejection short-circuits. */
+  before?: (destination: RouteData) => boolean | Promise<boolean>;
 }
 
 export interface Router {
   /** Register a store. Returns a disposer to unregister. */
   register(store: ObservableTarget, options: RegisterOptions): () => void;
-  /** pushState + calls all onRoute handlers. */
-  navigate(path: string, opts?: { query?: Record<string, string>; hash?: Record<string, string> }): void;
-  /** replaceState + calls all onRoute handlers. */
-  replace(path: string, opts?: { query?: Record<string, string>; hash?: Record<string, string> }): void;
+  /** pushState + calls all onRoute handlers. Awaits before guards first. */
+  navigate(path: string, opts?: { query?: Record<string, string>; hash?: Record<string, string> }): Promise<void>;
+  /** replaceState + calls all onRoute handlers. Awaits before guards first. */
+  replace(path: string, opts?: { query?: Record<string, string>; hash?: Record<string, string> }): Promise<void>;
   /** history.back() */
   back(): void;
   /** history.forward() */

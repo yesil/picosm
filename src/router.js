@@ -61,6 +61,15 @@ export function createRouter() {
   const registrations = [];
   let currentURL = '';
 
+  async function checkGuards(destination) {
+    for (const reg of registrations) {
+      if (!reg.before) continue;
+      const allowed = await reg.before(destination);
+      if (!allowed) return false;
+    }
+    return true;
+  }
+
   function notifyStores(parsed) {
     for (const reg of registrations) {
       reg.onRoute?.(parsed);
@@ -86,22 +95,21 @@ export function createRouter() {
     }
   }
 
-  function replaceURL(url) {
-    if (url !== currentURL) {
-      currentURL = url;
-      history.replaceState(null, '', url);
-    }
-  }
-
   function onStoreChange() {
     const merged = collectURL();
     const url = buildURL(merged);
     pushURL(url);
   }
 
-  function onPopState() {
+  async function onPopState() {
     const parsed = parseURL();
-    currentURL = buildURL(parsed);
+    const newURL = buildURL(parsed);
+    if (!(await checkGuards(parsed))) {
+      // Guard rejected — push old URL back
+      history.pushState(null, '', currentURL);
+      return;
+    }
+    currentURL = newURL;
     notifyStores(parsed);
   }
 
@@ -116,6 +124,7 @@ export function createRouter() {
         store,
         onRoute: options.onRoute,
         toURL: options.toURL,
+        before: options.before,
         disposer: null,
       };
 
@@ -135,20 +144,22 @@ export function createRouter() {
       };
     },
 
-    navigate(path, opts) {
+    async navigate(path, opts) {
       const query = opts?.query || {};
       const hash = opts?.hash || {};
       const parsed = { path, query, hash };
+      if (!(await checkGuards(parsed))) return;
       const url = buildURL(parsed);
       currentURL = url;
       history.pushState(null, '', url);
       notifyStores(parsed);
     },
 
-    replace(path, opts) {
+    async replace(path, opts) {
       const query = opts?.query || {};
       const hash = opts?.hash || {};
       const parsed = { path, query, hash };
+      if (!(await checkGuards(parsed))) return;
       const url = buildURL(parsed);
       currentURL = url;
       history.replaceState(null, '', url);
