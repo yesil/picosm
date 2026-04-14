@@ -200,7 +200,7 @@ Intermediate state changes within an async action are not observable until the a
 `createRouter` coordinates multiple stores with the browser History API. Each store registers itself and decides what part of the URL it owns. The router parses and serializes query/hash as objects — stores never touch strings.
 
 ```javascript
-import { createRouter } from 'picosm/router';
+import { createRouter } from 'picosm';
 
 const router = createRouter();
 ```
@@ -268,7 +268,7 @@ router.destroy();
 
 ### Event delegation
 
-`router.go` is a bound click handler for `<a>` elements. One handler on a parent, works for all links via event delegation:
+`router.go` is a bound click handler for any element with `href`. One handler on a parent, works for all links via event delegation:
 
 ```javascript
 html`
