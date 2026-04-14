@@ -78,27 +78,33 @@ export function createRouter() {
 
   function collectURL() {
     const merged = { path: '/', query: {}, hash: {} };
+    let replace = false;
     for (const reg of registrations) {
       if (!reg.toURL) continue;
       const part = reg.toURL();
       if (part.path != null) merged.path = part.path;
       if (part.query) Object.assign(merged.query, part.query);
       if (part.hash) Object.assign(merged.hash, part.hash);
+      if (part.replace) replace = true;
     }
-    return merged;
+    return { ...merged, replace };
   }
 
-  function pushURL(url) {
+  function syncURL(url, replace) {
     if (url !== currentURL) {
       currentURL = url;
-      history.pushState(null, '', url);
+      if (replace) {
+        history.replaceState(null, '', url);
+      } else {
+        history.pushState(null, '', url);
+      }
     }
   }
 
   function onStoreChange() {
     const merged = collectURL();
     const url = buildURL(merged);
-    pushURL(url);
+    syncURL(url, merged.replace);
   }
 
   async function onPopState() {

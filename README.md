@@ -2,8 +2,6 @@
 
 Lightweight, zero-dependency state manager that replicates core MobX features without using Proxy objects.
 
-**~1.2 KB** gzipped
-
 ```bash
 npm install picosm
 ```
@@ -234,8 +232,28 @@ router.register(searchStore, {
 
 Each `register` call returns a disposer. All options are optional:
 - `onRoute({ path, query, hash })` — URL to store. Called on registration, navigate, replace, and popstate.
-- `toURL()` — store to URL. Returns `{ path?, query?, hash? }`. The router merges results from all stores and pushes to the browser.
+- `toURL()` — store to URL. Returns `{ path?, query?, hash?, replace? }`. The router merges results from all stores and syncs to the browser.
 - `before({ path, query, hash })` — navigation guard. Return `false` or `Promise<false>` to block navigation.
+
+When `toURL` returns `replace: true`, the router uses `replaceState` instead of `pushState` — the URL updates without adding a history entry. Useful for filter changes that shouldn't require pressing Back through each tweak:
+
+```javascript
+// Filter changes replace the current history entry
+router.register(filterStore, {
+  onRoute({ query }) { filterStore.setFilters(query); },
+  toURL() {
+    return { query: filterStore.filters, replace: true };
+  },
+});
+
+// Page navigation pushes a new history entry
+router.register(appStore, {
+  onRoute({ path }) { appStore.setRoute(path); },
+  toURL() {
+    return { path: appStore.path };
+  },
+});
+```
 
 ### Navigation
 

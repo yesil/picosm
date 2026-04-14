@@ -10,6 +10,8 @@ export interface URLParts {
   path?: string;
   query?: Record<string, string>;
   hash?: Record<string, string>;
+  /** When true, store-triggered URL changes use replaceState instead of pushState. */
+  replace?: boolean;
 }
 
 export interface RegisterOptions {

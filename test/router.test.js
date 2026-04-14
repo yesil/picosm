@@ -322,6 +322,60 @@ describe('Router', () => {
     expect(guardB.callCount).to.equal(0);
   });
 
+  // toURL replace tests
+
+  it('toURL with replace: true uses replaceState instead of pushState', async () => {
+    router = createRouter();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute({ query }) {
+        store.setFilters(query);
+      },
+      toURL() {
+        return { query: store.filters, replace: true };
+      },
+    });
+
+    // Navigate to set a baseline history entry
+    await router.navigate('/base');
+    const historyLengthBefore = history.length;
+
+    // Store change should replaceState, not pushState
+    store.setFilters({ color: 'red' });
+    await flush();
+    await flush();
+
+    expect(window.location.search).to.include('color=red');
+    // replaceState does not add a new history entry
+    expect(history.length).to.equal(historyLengthBefore);
+  });
+
+  it('toURL without replace uses pushState', async () => {
+    router = createRouter();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute({ query }) {
+        store.setFilters(query);
+      },
+      toURL() {
+        return { query: store.filters };
+      },
+    });
+
+    await router.navigate('/base');
+    const historyLengthBefore = history.length;
+
+    store.setFilters({ size: 'large' });
+    await flush();
+    await flush();
+
+    expect(window.location.search).to.include('size=large');
+    // pushState adds a new history entry
+    expect(history.length).to.equal(historyLengthBefore + 1);
+  });
+
   it('disposed store guard is no longer checked', async () => {
     router = createRouter();
     const onRoute = spy();

@@ -63,9 +63,10 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 5. **`toURL` returns objects** — `{ path?, query?, hash? }`, router merges all registered stores and serializes
 6. **`router.go` is a property, not a method call** — bound click handler, same reference every render
 7. **Stores own the state, URL is a side effect** — components observe stores, not the router
-8. **`before` is an async navigation guard** — returns `boolean` or `Promise<boolean>`, first `false` short-circuits
-9. **`navigate` and `replace` are async** — they await `before` guards before proceeding
-10. **Browser back/forward cannot be prevented** — the router detects via `popstate` and pushes the old URL back if a guard rejects
+8. **`toURL` can return `replace: true`** — uses `replaceState` instead of `pushState` for store-triggered URL changes (e.g., filters)
+9. **`before` is an async navigation guard** — returns `boolean` or `Promise<boolean>`, first `false` short-circuits
+10. **`navigate` and `replace` are async** — they await `before` guards before proceeding
+11. **Browser back/forward cannot be prevented** — the router detects via `popstate` and pushes the old URL back if a guard rejects
 
 ## Architecture
 - `src/makeObservable.js` — core: action instrumentation, computed caching, observe, subscribe/notify
