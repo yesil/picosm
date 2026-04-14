@@ -5,7 +5,7 @@ Lightweight, zero-dependency state manager that replicates core MobX features wi
 **~1.2 KB** gzipped | **3.5 KB** minified | **7.4 KB** source
 
 ```bash
-npm add https://github.com/yesil/picosm/releases/download/v1.2.1/picosm-1.2.1.tgz
+npm install picosm
 ```
 
 ## Features

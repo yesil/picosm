@@ -1,21 +1,13 @@
-// Type placeholder for instances of classes decorated with makeObservable
+/** Instance of a class instrumented by makeObservable */
 export interface ObservableTarget {
-  // Internal methods added by makeObservable
   __notifyObservers(): void;
   __resetComputedProperties(): void;
-  __observe(callback: () => void): () => void; // Returns disposer
-  __subscribe(onMessageCallback: (message: any) => void): () => void; // Returns disposer
-
-  // Optional internal properties (assuming they might exist)
-  __observers?: Set<() => void>;
-  __subscribers?: Set<(message: any) => void>;
-  __computedProperties?: Map<string, any>;
-
-  // Allow any other properties
+  __observe(callback: () => void): () => void;
+  __subscribe(onMessageCallback: (message: any) => void): () => void;
   [key: string]: any;
 }
 
-// Interface for the constructor passed to makeObservable
+/** Constructor passed to makeObservable */
 export interface ObservableConstructor {
   new (...args: any[]): ObservableTarget;
   prototype: ObservableTarget;
@@ -23,75 +15,81 @@ export interface ObservableConstructor {
   computedProperties?: string[];
 }
 
-// Disposer function returned by observers/subscribers/reactions
+/** Cleanup function returned by observe, reaction, track, subscribe */
 export type Disposer = () => void;
 
 /**
- * Decorator function that makes a class observable by adding reactive capabilities.
- * Supports action methods, computed properties, and observer/subscriber patterns.
- * @param constructor - The class constructor to make observable
+ * Makes a class observable. Call once per class, after the class declaration.
+ * The class should declare `static observableActions` and optionally `static computedProperties`.
+ * Calling twice on the same class is a no-op.
  */
 export function makeObservable(constructor: ObservableConstructor): void;
 
 /**
- * Observes changes in an observable instance with optional debouncing/throttling.
- * @param target - The observable target instance.
- * @param callback - The callback to execute on changes.
- * @param timeout - Optional timeout in milliseconds for throttling.
- * @returns Cleanup function to remove the observer.
+ * Observes changes on an observable instance.
+ * Notifications are batched via microtask — multiple synchronous actions produce a single callback.
+ * @param target - The observable instance
+ * @param callback - Fires when an observable action completes
+ * @param timeout - Optional throttle in milliseconds
+ * @returns Disposer function
  */
-export function observe(target: ObservableTarget, callback: () => void, timeout?: number): () => void;
+export function observe(target: ObservableTarget, callback: () => void, timeout?: number): Disposer;
 
 /**
- * Subscribes to messages broadcasted from an observable instance.
- * @param target - The observable target instance.
- * @param onMessageCallback - Callback to handle messages. Receives the message as an argument.
- * @returns Cleanup function to remove the subscriber.
+ * Subscribes to messages sent via `notify`. Messages are delivered synchronously.
+ * @param target - The observable instance
+ * @param onMessageCallback - Receives the message payload
+ * @returns Disposer function
  */
-export function subscribe(target: ObservableTarget, onMessageCallback: (message: any) => void): () => void;
+export function subscribe(target: ObservableTarget, onMessageCallback: (message: any) => void): Disposer;
 
 /**
  * Sends a message to all subscribers of an observable instance.
- * @param target - The observable target instance.
- * @param message - The message to send to subscribers.
+ * @param target - The observable instance
+ * @param message - Any value to broadcast
  */
 export function notify(target: ObservableTarget, message: any): void;
 
 /**
- * Creates a reaction that runs a side effect when selected data changes.
- * @param target - The observable target instance.
- * @param callback - A function that tracks observable properties and returns an array of their values.
- * @param execute - A function that runs when the values returned by `callback` change. Receives the values as arguments.
- * @param timeout - Optional timeout in milliseconds for debouncing/throttling the reaction.
- * @returns Cleanup function to remove the reaction.
+ * Reacts to specific value changes on one or more observable targets.
+ * The selector returns an array of values; the effect runs when that array changes element-wise.
+ * Return an empty array from the selector to skip execution.
+ * @param target - Single observable target
+ * @param selector - Extracts values to watch
+ * @param effect - Runs with the extracted values when they change
+ * @param timeout - Optional throttle in milliseconds
+ * @returns Disposer function
  */
 export function reaction<T extends any[]>(
   target: ObservableTarget,
-  callback: (target: ObservableTarget) => T,
-  execute: (...props: T) => void,
+  selector: (target: ObservableTarget) => T,
+  effect: (...props: T) => void,
   timeout?: number
 ): Disposer;
-
-export function reaction<T extends any[]>(
-  targets: [ObservableTarget, ...ObservableTarget[]],
-  callback: (...targets: ObservableTarget[]) => T,
-  execute: (...props: T) => void,
-  timeout?: number
-): Disposer;
-
 
 /**
- * Tracks changes in a source observable and triggers updates in a target observable.
- * When the source notifies observers, the target's computed properties are reset, and its observers are notified.
- * @param target - The target observable instance whose observers will be notified.
- * @param source - The source observable instance to track changes from.
- * @returns Cleanup function to stop tracking.
+ * Multi-target reaction. The selector receives all targets as positional arguments.
  */
-export function track(target: ObservableTarget, source: ObservableTarget): () => void; 
+export function reaction<T extends any[]>(
+  targets: ObservableTarget[],
+  selector: (...targets: ObservableTarget[]) => T,
+  effect: (...props: T) => void,
+  timeout?: number
+): Disposer;
 
 /**
- * Enhances a LitElement-like class to observe reactive properties on instances.
- * Returns the same constructor for chaining.
- * @param constructor - A class with LitController lifecycle hooks
+ * Forwards notifications from source to target.
+ * When source's actions fire, target's observers are notified and computed properties invalidated.
+ * @param target - The observable to notify
+ * @param source - The observable to watch
+ * @returns Disposer function
+ */
+export function track(target: ObservableTarget, source: ObservableTarget): Disposer;
+
+/**
+ * Enhances a LitElement class to automatically observe properties with `observe: true`.
+ * Supports `throttle` option on property config. Re-binds when property values change.
+ * @param constructor - A LitElement class
+ * @returns The same constructor (for chaining)
  */
 export function makeLitObserver<T extends new (...args: any[]) => any>(constructor: T): T;

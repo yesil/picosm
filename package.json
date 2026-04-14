@@ -1,12 +1,22 @@
 {
   "name": "picosm",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "main": "dist/picosm.js",
+  "module": "dist/picosm.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/picosm.js",
+      "default": "./dist/picosm.js"
+    },
+    "./src/*": "./src/*"
+  },
   "scripts": {
     "test": "web-test-runner test/**/*.test.js --node-resolve",
     "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch",
-    "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm --metafile=dist/meta.json && npx esbuild examples/swc.js --bundle --outfile=examples/cart/swc.js --format=esm --minify"
+    "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm --metafile=dist/meta.json && npx esbuild examples/swc.js --bundle --outfile=examples/cart/swc.js --format=esm --minify",
+    "prepublishOnly": "npm test && npm run build"
   },
   "type": "module",
   "files": [
