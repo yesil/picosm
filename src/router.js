@@ -102,6 +102,9 @@ export function createRouter() {
     reg.cachedURL = reg.toURL();
     const url = buildURL(buildMergedURL());
     syncURL(url, !!reg.cachedURL.replace);
+    if (reg.storage) {
+      reg.storage.setItem(reg.store.constructor.name, JSON.stringify(reg.cachedURL));
+    }
   }
 
   async function onPopState() {
@@ -128,6 +131,7 @@ export function createRouter() {
         onRoute: options.onRoute,
         toURL: options.toURL,
         before: options.before,
+        storage: options.storage ?? null,
         cachedURL: null,
         disposer: null,
       };
@@ -137,6 +141,13 @@ export function createRouter() {
       if (options.toURL) {
         reg.cachedURL = options.toURL();
         reg.disposer = observe(store, () => onStoreChange(reg));
+      }
+
+      if (options.storage) {
+        const raw = options.storage.getItem(store.constructor.name);
+        if (raw != null) {
+          try { options.onRoute?.(JSON.parse(raw)); } catch {}
+        }
       }
 
       // Notify this store with current URL on registration

@@ -403,3 +403,120 @@ describe('Router', () => {
     expect(onRoute.callCount).to.equal(2);
   });
 });
+
+describe('Router storage', () => {
+  let router;
+  const STORAGE_KEY = 'TestStore';
+
+  afterEach(() => {
+    router?.destroy();
+    history.replaceState(null, '', window.location.pathname);
+    sessionStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(STORAGE_KEY);
+  });
+
+  it('calls onRoute with stored data on registration when key exists', () => {
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ query: { category: 'shoes' } }));
+
+    router = createRouter();
+    const store = new TestStore();
+    const onRoute = spy();
+
+    router.register(store, {
+      onRoute,
+      toURL() { return { query: store.filters }; },
+      storage: sessionStorage,
+    });
+
+    // onRoute called twice: once from storage restore, once from parseURL()
+    expect(onRoute.callCount).to.equal(2);
+    expect(onRoute.firstCall.args[0]).to.deep.equal({ query: { category: 'shoes' } });
+  });
+
+  it('does not call onRoute with stored data when key is absent', () => {
+    router = createRouter();
+    const store = new TestStore();
+    const onRoute = spy();
+
+    router.register(store, {
+      onRoute,
+      toURL() { return { query: store.filters }; },
+      storage: sessionStorage,
+    });
+
+    expect(onRoute.callCount).to.equal(1); // only the normal parseURL() call
+  });
+
+  it('writes toURL result to storage when store changes', async () => {
+    router = createRouter();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute({ query }) { store.setFilters(query); },
+      toURL() { return { query: store.filters }; },
+      storage: sessionStorage,
+    });
+
+    store.setFilters({ color: 'red' });
+    await flush();
+    await flush();
+
+    const saved = JSON.parse(sessionStorage.getItem(STORAGE_KEY));
+    expect(saved).to.deep.equal({ query: { color: 'red' } });
+  });
+
+  it('works with localStorage backend', async () => {
+    router = createRouter();
+    const store = new TestStore();
+
+    router.register(store, {
+      onRoute({ query }) { store.setFilters(query); },
+      toURL() { return { query: store.filters }; },
+      storage: localStorage,
+    });
+
+    store.setFilters({ size: 'large' });
+    await flush();
+    await flush();
+
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    expect(saved).to.deep.equal({ query: { size: 'large' } });
+  });
+
+  it('disposed registration stops writing to storage on store changes', async () => {
+    router = createRouter();
+    const store = new TestStore();
+
+    const dispose = router.register(store, {
+      onRoute({ query }) { store.setFilters(query); },
+      toURL() { return { query: store.filters }; },
+      storage: sessionStorage,
+    });
+
+    dispose();
+
+    store.setFilters({ color: 'blue' });
+    await flush();
+    await flush();
+
+    expect(sessionStorage.getItem(STORAGE_KEY)).to.be.null;
+  });
+
+  it('silently ignores malformed JSON in storage', () => {
+    sessionStorage.setItem(STORAGE_KEY, 'not valid json {{{');
+
+    router = createRouter();
+    const store = new TestStore();
+    const onRoute = spy();
+
+    expect(() => {
+      router.register(store, {
+        onRoute,
+        toURL() { return {}; },
+        storage: sessionStorage,
+      });
+    }).not.to.throw();
+
+    expect(onRoute.callCount).to.equal(1); // only the normal parseURL() call
+  });
+});

@@ -14,7 +14,7 @@ npm install picosm
 - **Computed caching** — getter values are cached until invalidated by an action
 - **Throttled observe** — built-in throttling for high-frequency updates
 - **Lit integration** — `makeLitObserver` wires observable properties to `requestUpdate` automatically
-- **Store-driven routing** — `createRouter` syncs multiple stores with the browser History API
+- **Store-driven routing** — `createRouter` syncs multiple stores with the browser History API, with optional sessionStorage/localStorage persistence
 - **Tree-shakeable** — import only what you need from individual modules
 
 ## Demos
@@ -234,6 +234,7 @@ Each `register` call returns a disposer. All options are optional:
 - `onRoute({ path, query, hash })` — URL to store. Called on registration, navigate, replace, and popstate.
 - `toURL()` — store to URL. Returns `{ path?, query?, hash?, replace? }`. The router merges results from all stores and syncs to the browser.
 - `before({ path, query, hash })` — navigation guard. Return `false` or `Promise<false>` to block navigation.
+- `storage` — `sessionStorage` or `localStorage`. Persists the `toURL()` result and restores it via `onRoute` on registration.
 
 Each store's `toURL` result is cached. When a store changes, only that store's `toURL` is called — the URL is rebuilt from all cached results. Removed keys disappear cleanly. If `toURL` returns `replace: true`, the router uses `replaceState` instead of `pushState`. Each store controls its own history behavior:
 
@@ -299,6 +300,18 @@ router.register(formStore, {
 ```
 
 Guards run sequentially — the first `false` short-circuits, no further guards are called. For browser back/forward, the guard runs after the URL changes and pushes the old URL back if rejected.
+
+### Persisting store state
+
+Pass `storage: sessionStorage` or `storage: localStorage` to persist a store's URL state across page loads. On each store change the `toURL()` result is written to storage; on registration the stored value is passed to `onRoute` before the current URL is applied. The storage key is the store's class name.
+
+```javascript
+router.register(filterStore, {
+  onRoute({ query }) { filterStore.setFilters(query); },
+  toURL() { return { query: filterStore.filters }; },
+  storage: sessionStorage,  // survives page refresh; use localStorage to survive browser restart
+});
+```
 
 ## Contributing
 
