@@ -4,4 +4,7 @@ const config = {
   ...eslintPluginPrettierRecommended,
 };
 
-export default [config];
+export default [
+  { ignores: ['dist/**', 'examples/**/swc.js'] },
+  config,
+];
