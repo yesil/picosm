@@ -1,10 +1,19 @@
 # picosm
 
+[![npm version](https://img.shields.io/npm/v/picosm.svg)](https://www.npmjs.com/package/picosm)
+[![npm downloads](https://img.shields.io/npm/dm/picosm.svg)](https://www.npmjs.com/package/picosm)
+[![minzipped size](https://img.shields.io/bundlephobia/minzip/picosm.svg)](https://bundlephobia.com/package/picosm)
+[![dependencies](https://img.shields.io/badge/dependencies-0-brightgreen.svg)](https://www.npmjs.com/package/picosm?activeTab=dependencies)
+[![license](https://img.shields.io/npm/l/picosm.svg)](LICENSE)
+[![CI](https://github.com/yesil/picosm/actions/workflows/ci.yml/badge.svg)](https://github.com/yesil/picosm/actions/workflows/ci.yml)
+
 Lightweight, zero-dependency state manager for observable classes using explicit action declarations, computed getter caching, and batched notifications.
 
 ```bash
 npm install picosm
 ```
+
+Available on [npm](https://www.npmjs.com/package/picosm).
 
 ## Features
 
@@ -315,5 +324,15 @@ router.register(filterStore, {
 
 ## Contributing
 
-- Open a PR to contribute
-- [Create an issue](https://github.com/yesil/picosm/issues) to request a feature or report a bug
+Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup, the testing model, and conventions. [Open an issue](https://github.com/yesil/picosm/issues) to request a feature or report a bug.
+
+## Links
+
+- [npm package](https://www.npmjs.com/package/picosm)
+- [GitHub repository](https://github.com/yesil/picosm)
+- [Live demos](https://yesil.github.io/picosm/examples/)
+- [Issue tracker](https://github.com/yesil/picosm/issues)
+
+## License
+
+[ISC](LICENSE) © Ilyas Türkben

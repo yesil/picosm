@@ -19,12 +19,17 @@
   },
   "scripts": {
     "test": "web-test-runner test/**/*.test.js --node-resolve",
+    "lint": "eslint src test",
     "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch",
     "dev": "npx @web/dev-server -c web-dev-server.config.js",
     "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm --minify --metafile=dist/meta.json && npx esbuild examples/swc.js --bundle --outfile=examples/cart/swc.js --format=esm --minify",
     "prepublishOnly": "npm test && npm run build"
   },
   "type": "module",
+  "sideEffects": false,
+  "engines": {
+    "node": ">=22"
+  },
   "files": [
     "src",
     "dist"
