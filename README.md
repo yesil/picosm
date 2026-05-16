@@ -1,6 +1,6 @@
 # picosm
 
-Lightweight, zero-dependency state manager that replicates core MobX features without using Proxy objects.
+Lightweight, zero-dependency state manager for observable classes using explicit action declarations, computed getter caching, and batched notifications.
 
 ```bash
 npm install picosm
@@ -8,7 +8,7 @@ npm install picosm
 
 ## Features
 
-- **No Proxy** — instruments classes via static declarations, no magic
+- **Explicit action notifications** — classes are instrumented via static declarations
 - **Microtask batching** — multiple synchronous actions coalesce into a single notification
 - **Async actions** — handles both `async` functions and promise-returning methods
 - **Computed caching** — getter values are cached until invalidated by an action
@@ -20,7 +20,7 @@ npm install picosm
 ## Demos
 
 - [Shopping cart](https://yesil.github.io/picosm/examples/cart/index.html) — Lit + Spectrum Web Components + Router (filters, product detail, cart drawer)
-- [Stars canvas](https://yesil.github.io/picosm/examples/stars/index.html) — debounced observer + tracking connected stars (use metakey to connect)
+- [Stars canvas](https://yesil.github.io/picosm/examples/stars/index.html) — throttled observer + tracking connected stars (use metakey to connect)
 - [Minigame](https://yesil.github.io/picosm/examples/minigame/index.html)
 
 ## Quick start
@@ -72,7 +72,7 @@ Registers a `callback` that fires when any observable action completes on `targe
 Returns a **disposer** function.
 
 ```javascript
-// Immediate — fires on every action
+// Immediate — fires after observable actions, batched by microtask
 const disposer = observe(counter, () => console.log('changed'));
 
 // Throttled — fires at most once per 200ms, with trailing edge
@@ -230,7 +230,7 @@ router.register(searchStore, {
 });
 ```
 
-Each `register` call returns a disposer. All options are optional:
+Each `register` call returns a disposer. The options object supports these optional fields:
 - `onRoute({ path, query, hash })` — URL to store. Called on registration, navigate, replace, and popstate.
 - `toURL()` — store to URL. Returns `{ path?, query?, hash?, replace? }`. The router merges results from all stores and syncs to the browser.
 - `before({ path, query, hash })` — navigation guard. Return `false` or `Promise<false>` to block navigation.
