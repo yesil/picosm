@@ -24,7 +24,6 @@ class Pair {
 makeObservable(Pair);
 
 describe('Pico State Manager', () => {
-
   it('provides reaction function', async () => {
     const observable = new TestStore();
     const execute = spy((mode5, counter) => {
@@ -128,14 +127,23 @@ describe('Pico State Manager', () => {
   });
 
   it('requires the selector to return an array', () => {
-    expect(() => reaction(new Pair(), ({ a }) => a, () => {})).to.throw(
-      TypeError,
-      /selector must return an array/,
-    );
+    expect(() =>
+      reaction(
+        new Pair(),
+        ({ a }) => a,
+        () => {},
+      ),
+    ).to.throw(TypeError, /selector must return an array/);
   });
 
   it('throws a descriptive error for targets that are not observable', () => {
-    expect(() => reaction({}, () => [], () => {})).to.throw(
+    expect(() =>
+      reaction(
+        {},
+        () => [],
+        () => {},
+      ),
+    ).to.throw(
       TypeError,
       /reaction\(\) expects an instance of a class passed to makeObservable\(\)/,
     );

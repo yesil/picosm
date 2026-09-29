@@ -34,7 +34,10 @@ class Cart {
   }
 
   get total() {
-    return this.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    return this.items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0,
+    );
   }
 }
 
@@ -100,7 +103,13 @@ describe('track', () => {
   });
 
   it('throws descriptive errors for arguments that are not observable', () => {
-    expect(() => track(new Item(1), {})).to.throw(TypeError, /track\(\) source expects/);
-    expect(() => track({}, new Item(1))).to.throw(TypeError, /track\(\) target expects/);
+    expect(() => track(new Item(1), {})).to.throw(
+      TypeError,
+      /track\(\) source expects/,
+    );
+    expect(() => track({}, new Item(1))).to.throw(
+      TypeError,
+      /track\(\) target expects/,
+    );
   });
 });

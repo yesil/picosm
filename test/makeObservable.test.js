@@ -342,7 +342,10 @@ describe('Pico State Manager', () => {
       TypeError,
       /subscribe\(\) expects .* got the class\/function TestStore/,
     );
-    expect(() => notify(null, 'message')).to.throw(TypeError, /notify\(\) expects .* got null/);
+    expect(() => notify(null, 'message')).to.throw(
+      TypeError,
+      /notify\(\) expects .* got null/,
+    );
     expect(() => observe(new TestStore())).to.throw(
       TypeError,
       /observe\(\) expects a callback function/,

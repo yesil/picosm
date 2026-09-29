@@ -57,7 +57,8 @@ customElements.define(
   class extends HTMLElement {
     constructor() {
       super();
-      this.attachShadow({ mode: 'open' }).innerHTML = '<a href="/product/1">details</a>';
+      this.attachShadow({ mode: 'open' }).innerHTML =
+        '<a href="/product/1">details</a>';
     }
   },
 );
@@ -95,17 +96,25 @@ function recordHistory() {
 }
 
 function popState(router) {
-  const popped = new Promise((r) => window.addEventListener('popstate', r, { once: true }));
+  const popped = new Promise((r) =>
+    window.addEventListener('popstate', r, { once: true }),
+  );
   router.back();
   return popped.then(settle);
 }
 
 // Clicks a link inside a container delegating to router.go; the real navigation is always blocked
-function clickLink(router, attributes, { eventInit = {}, handledByApp = false } = {}) {
+function clickLink(
+  router,
+  attributes,
+  { eventInit = {}, handledByApp = false } = {},
+) {
   const nav = document.createElement('nav');
   const link = document.createElement('a');
-  for (const [name, value] of Object.entries(attributes)) link.setAttribute(name, value);
-  if (handledByApp) link.addEventListener('click', (event) => event.preventDefault());
+  for (const [name, value] of Object.entries(attributes))
+    link.setAttribute(name, value);
+  if (handledByApp)
+    link.addEventListener('click', (event) => event.preventDefault());
   nav.append(link);
   nav.addEventListener('click', router.go);
   document.body.append(nav);
@@ -117,7 +126,12 @@ function clickLink(router, attributes, { eventInit = {}, handledByApp = false } 
   document.addEventListener('click', block);
   const navigate = spy(router, 'navigate');
   link.dispatchEvent(
-    new MouseEvent('click', { bubbles: true, cancelable: true, button: 0, ...eventInit }),
+    new MouseEvent('click', {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      ...eventInit,
+    }),
   );
   navigate.restore();
   document.removeEventListener('click', block);
@@ -177,7 +191,10 @@ describe('Router', () => {
     const store = new TestStore();
     router.register(store, { onRoute });
 
-    await router.replace('/replaced', { query: { a: '1' }, hash: { section: 'top' } });
+    await router.replace('/replaced', {
+      query: { a: '1' },
+      hash: { section: 'top' },
+    });
 
     expect(onRoute.callCount).to.equal(2);
     const data = onRoute.secondCall.args[0];
@@ -524,7 +541,10 @@ describe('Router storage', () => {
   }
 
   it('restores stored query params missing from the URL and writes them to the URL', async () => {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ query: { category: 'shoes' } }));
+    sessionStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ query: { category: 'shoes' } }),
+    );
     history.replaceState(null, '', '/list');
     const historyLength = history.length;
     router = createRouter();
@@ -620,7 +640,11 @@ describe('Router storage', () => {
       }),
     ).to.throw(TypeError, /"storage" requires a non-empty string "key"/);
     expect(() =>
-      router.register(store, { onRoute() {}, storage: sessionStorage, key: STORAGE_KEY }),
+      router.register(store, {
+        onRoute() {},
+        storage: sessionStorage,
+        key: STORAGE_KEY,
+      }),
     ).to.throw(TypeError, /requires both "onRoute" and "toURL"/);
   });
 
@@ -681,7 +705,8 @@ describe('Router URL sync', () => {
     const view = new QueryStore();
     const filters = new QueryStore();
     router.register(view, {
-      onRoute: ({ query }) => view.setQuery(query.product ? { product: query.product } : {}),
+      onRoute: ({ query }) =>
+        view.setQuery(query.product ? { product: query.product } : {}),
       toURL: () => ({ query: view.query }),
     });
     router.register(filters, {
@@ -718,7 +743,9 @@ describe('Router URL sync', () => {
     const view = new QueryStore();
     const filters = new QueryStore();
     router.register(view, { toURL: () => ({ query: view.query }) });
-    router.register(filters, { toURL: () => ({ query: filters.query, replace: true }) });
+    router.register(filters, {
+      toURL: () => ({ query: filters.query, replace: true }),
+    });
     recorder = recordHistory();
 
     filters.setQuery({ category: 'shoes' });
@@ -755,7 +782,8 @@ describe('Router URL sync', () => {
     router = createRouter();
     const store = new QueryStore();
     router.register(store, {
-      onRoute: ({ query }) => store.setQuery(query.category ? { category: query.category } : {}),
+      onRoute: ({ query }) =>
+        store.setQuery(query.category ? { category: query.category } : {}),
       toURL: () => ({ query: store.query }),
     });
 
@@ -776,7 +804,9 @@ describe('Router URL sync', () => {
     store.setQuery({ category: 'shoes' });
     await settle();
 
-    expect(window.location.search + window.location.hash).to.equal('?category=shoes#intro');
+    expect(window.location.search + window.location.hash).to.equal(
+      '?category=shoes#intro',
+    );
   });
 
   it('keeps managing the hash of a store that stops producing it', async () => {
@@ -818,9 +848,9 @@ describe('Router navigation', () => {
     await router.navigate('/about');
     await settle();
 
-    expect(window.location.pathname + window.location.search + window.location.hash).to.equal(
-      '/about',
-    );
+    expect(
+      window.location.pathname + window.location.search + window.location.hash,
+    ).to.equal('/about');
     expect(view.query).to.deep.equal({});
   });
 
@@ -829,7 +859,9 @@ describe('Router navigation', () => {
     const onRoute = spy();
     router.register(new TestStore(), { onRoute });
 
-    await router.navigate('/search?term=shoes#results', { query: { page: '2' } });
+    await router.navigate('/search?term=shoes#results', {
+      query: { page: '2' },
+    });
 
     expect(onRoute.lastCall.args[0]).to.deep.equal({
       path: '/search',
@@ -848,7 +880,9 @@ describe('Router navigation', () => {
     expect(window.location.pathname).to.equal('/shop/item');
 
     await router.navigate('?page=2');
-    expect(window.location.pathname + window.location.search).to.equal('/shop/item?page=2');
+    expect(window.location.pathname + window.location.search).to.equal(
+      '/shop/item?page=2',
+    );
   });
 
   it('replaces the entry when navigating to the current URL', async () => {
@@ -871,13 +905,17 @@ describe('Router navigation', () => {
 
     await router.navigate('/guide#intro');
 
-    expect(window.location.pathname + window.location.hash).to.equal('/guide#intro');
+    expect(window.location.pathname + window.location.hash).to.equal(
+      '/guide#intro',
+    );
   });
 
   it('rejects cross-origin URLs with a descriptive error', async () => {
     router = createRouter();
 
-    const error = await router.navigate('https://example.com/x').catch((e) => e);
+    const error = await router
+      .navigate('https://example.com/x')
+      .catch((e) => e);
 
     expect(error.message).to.match(/only same-origin URLs are supported/);
   });
@@ -930,7 +968,9 @@ describe('Router navigation', () => {
     });
 
     history.replaceState(null, '', '/a'); // the browser already moved
-    const error = await onPopState(new PopStateEvent('popstate')).catch((e) => e);
+    const error = await onPopState(new PopStateEvent('popstate')).catch(
+      (e) => e,
+    );
 
     expect(error).to.equal(failure);
     expect(window.location.pathname).to.equal('/b');
@@ -970,11 +1010,15 @@ describe('router.go', () => {
 
     clickLink(router, { href: '?page=2' });
     await settle();
-    expect(window.location.pathname + window.location.search).to.equal('/shop/list?page=2');
+    expect(window.location.pathname + window.location.search).to.equal(
+      '/shop/list?page=2',
+    );
 
     clickLink(router, { href: 'item#reviews' });
     await settle();
-    expect(window.location.pathname + window.location.hash).to.equal('/shop/item#reviews');
+    expect(window.location.pathname + window.location.hash).to.equal(
+      '/shop/item#reviews',
+    );
   });
 
   it('leaves same-page anchors to the browser', () => {
@@ -1000,7 +1044,10 @@ describe('router.go', () => {
 
     for (const [attributes, options] of cases) {
       const { navigate } = clickLink(router, attributes, options);
-      expect(navigate.callCount, JSON.stringify([attributes, options])).to.equal(0);
+      expect(
+        navigate.callCount,
+        JSON.stringify([attributes, options]),
+      ).to.equal(0);
     }
   });
 
@@ -1015,11 +1062,14 @@ describe('router.go', () => {
     document.addEventListener('click', block);
     const navigate = spy(router, 'navigate');
 
-    card.shadowRoot
-      .querySelector('a')
-      .dispatchEvent(
-        new MouseEvent('click', { bubbles: true, composed: true, cancelable: true, button: 0 }),
-      );
+    card.shadowRoot.querySelector('a').dispatchEvent(
+      new MouseEvent('click', {
+        bubbles: true,
+        composed: true,
+        cancelable: true,
+        button: 0,
+      }),
+    );
 
     navigate.restore();
     document.removeEventListener('click', block);
@@ -1055,7 +1105,10 @@ describe('Router registration', () => {
     router = createRouter();
     const store = new TestStore();
 
-    expect(() => router.register(store)).to.throw(TypeError, /requires an options object/);
+    expect(() => router.register(store)).to.throw(
+      TypeError,
+      /requires an options object/,
+    );
     expect(() => router.register(store, { onRoute: 'nope' })).to.throw(
       TypeError,
       /"onRoute" must be a function/,

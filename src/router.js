@@ -60,7 +60,9 @@ function routeKey(parts) {
 
 function resolveRoute(path, opts = {}) {
   if (typeof path !== 'string') {
-    throw new TypeError('picosm router: navigate() and replace() expect a path string');
+    throw new TypeError(
+      'picosm router: navigate() and replace() expect a path string',
+    );
   }
   const url = new URL(path, document.baseURI);
   if (url.origin !== window.location.origin) {
@@ -81,11 +83,15 @@ function isPlainObject(value) {
 
 function validateOptions(store, options) {
   if (!isPlainObject(options)) {
-    throw new TypeError('picosm router: register(store, options) requires an options object');
+    throw new TypeError(
+      'picosm router: register(store, options) requires an options object',
+    );
   }
   for (const name of ['onRoute', 'toURL', 'before']) {
     if (options[name] != null && typeof options[name] !== 'function') {
-      throw new TypeError(`picosm router: register() option "${name}" must be a function`);
+      throw new TypeError(
+        `picosm router: register() option "${name}" must be a function`,
+      );
     }
   }
   if (options.toURL) assertObservable(store, 'router.register() with toURL');
@@ -110,9 +116,12 @@ function readStored(storage, key) {
   try {
     saved = JSON.parse(raw);
   } catch (error) {
-    throw new Error(`picosm router: stored value for key "${key}" is not valid JSON`, {
-      cause: error,
-    });
+    throw new Error(
+      `picosm router: stored value for key "${key}" is not valid JSON`,
+      {
+        cause: error,
+      },
+    );
   }
   const valid =
     isPlainObject(saved) &&
@@ -165,7 +174,10 @@ export function createRouter() {
     });
     if (errors.length === 1) throw errors[0];
     if (errors.length > 1) {
-      throw new AggregateError(errors, 'picosm router: several onRoute handlers threw');
+      throw new AggregateError(
+        errors,
+        'picosm router: several onRoute handlers threw',
+      );
     }
   }
 
@@ -227,7 +239,10 @@ export function createRouter() {
       if (!parts.replace) push = true;
       if (reg.options.storage) {
         const { query, hash } = parts;
-        reg.options.storage.setItem(reg.options.key, JSON.stringify({ query, hash }));
+        reg.options.storage.setItem(
+          reg.options.key,
+          JSON.stringify({ query, hash }),
+        );
       }
     }
     if (!changed) return;
@@ -275,7 +290,9 @@ export function createRouter() {
       };
       // Stored query/hash values fill in the keys missing from the current URL
       let route = parseURL();
-      const saved = options.storage ? readStored(options.storage, options.key) : null;
+      const saved = options.storage
+        ? readStored(options.storage, options.key)
+        : null;
       if (saved) {
         route = {
           path: route.path,
@@ -327,7 +344,8 @@ export function createRouter() {
   // Bound click handler for event delegation on elements with href
   router.go = (event) => {
     if (event.defaultPrevented || event.button !== 0) return;
-    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey)
+      return;
     // composedPath() also reaches links inside the shadow roots of nested components
     const el = event
       .composedPath()
@@ -343,7 +361,8 @@ export function createRouter() {
     }
     if (url.origin !== window.location.origin) return;
     const samePage =
-      url.pathname === window.location.pathname && url.search === window.location.search;
+      url.pathname === window.location.pathname &&
+      url.search === window.location.search;
     // Same-page anchors: the browser scrolls and fires popstate, which notifies the stores
     if (samePage && url.hash) return;
     event.preventDefault();

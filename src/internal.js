@@ -1,5 +1,6 @@
 function describe(value) {
-  if (typeof value === 'function') return `the class/function ${value.name || '(anonymous)'}`;
+  if (typeof value === 'function')
+    return `the class/function ${value.name || '(anonymous)'}`;
   if (value === null || typeof value !== 'object') return String(value);
   return `an instance of ${value.constructor?.name || 'Object'}`;
 }
