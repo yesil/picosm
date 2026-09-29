@@ -350,7 +350,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
 
 - [npm package](https://www.npmjs.com/package/picosm)
 - [GitHub repository](https://github.com/yesil/picosm)
-- [Live demos](https://yesil.github.io/picosm/examples/)
+- [Live tour](https://yesil.github.io/picosm/examples/)
 - [Issue tracker](https://github.com/yesil/picosm/issues)
 
 ## License

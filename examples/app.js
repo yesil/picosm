@@ -137,6 +137,7 @@ class PicosmDemo extends LitElement {
             <nav class="hero-links" aria-label="Project">
               <a href="https://github.com/yesil/picosm" target="_blank" rel="noopener">GitHub ↗</a>
               <a href="https://www.npmjs.com/package/picosm" target="_blank" rel="noopener">npm ↗</a>
+              <a href="https://github.com/yesil/picosm#readme" target="_blank" rel="noopener">Docs ↗</a>
             </nav>
           </div>
           <h1>Observable classes, <em>live</em>.</h1>

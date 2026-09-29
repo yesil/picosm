@@ -14,7 +14,7 @@ npm install
 | `npm test` | Run the full test suite (browser-based, Chrome) |
 | `npm run test:watch` | Re-run tests on file changes |
 | `npm run lint` | Lint `src` and `test` (eslint + prettier) |
-| `npm run dev` | Start the dev server for the examples |
+| `npm run dev` | Serve the live tour (`examples/`) |
 | `npm run build` | Bundle `src/` into `dist/` with esbuild |
 
 ## Testing model
@@ -35,8 +35,9 @@ change; CI runs lint, tests, and the build on every pull request.
 - `src/makeLitObserver.js` — LitElement integration via reactive controller
 - `src/router.js` — store-driven URL routing via the History API (`picosm/router`)
 - `src/index.js` — barrel export (includes router)
+- `src/internal.js` — shared helpers, not exported from the barrel
 - `test/` — browser tests (web-test-runner)
-- `examples/` — runnable demos served at `yesil.github.io/picosm/examples/`
+- `examples/` — the live tour: one page with a card per capability, served at `yesil.github.io/picosm/examples/`
 
 ## Conventions
 
