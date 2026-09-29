@@ -19,18 +19,17 @@ Available on [npm](https://www.npmjs.com/package/picosm).
 
 - **Explicit action notifications** — classes are instrumented via static declarations
 - **Microtask batching** — multiple synchronous actions coalesce into a single notification
-- **Async actions** — handles both `async` functions and promise-returning methods
+- **Async actions** — handles both `async` functions and promise-returning methods, including rejections
 - **Computed caching** — getter values are cached until invalidated by an action
 - **Throttled observe** — built-in throttling for high-frequency updates
 - **Lit integration** — `makeLitObserver` wires observable properties to `requestUpdate` automatically
 - **Store-driven routing** — `createRouter` syncs multiple stores with the browser History API, with optional sessionStorage/localStorage persistence
+- **Descriptive errors** — misconfigured classes, non-observable targets and notification cycles throw errors that say what to fix
 - **Tree-shakeable** — import only what you need from individual modules
 
-## Demos
+## Live tour
 
-- [Shopping cart](https://yesil.github.io/picosm/examples/cart/index.html) — Lit + Spectrum Web Components + Router (filters, product detail, cart drawer)
-- [Stars canvas](https://yesil.github.io/picosm/examples/stars/index.html) — throttled observer + tracking connected stars (use metakey to connect)
-- [Minigame](https://yesil.github.io/picosm/examples/minigame/index.html)
+[yesil.github.io/picosm/examples](https://yesil.github.io/picosm/examples/) runs every capability on one page, on a shared coffee-shop model: actions and batching, computed getters, async actions, throttled observers, reactions, tracking, messages, the Lit integration and the router, with an activity log of what happens underneath. Run it locally with `npm run dev`.
 
 ## Quick start
 
@@ -64,6 +63,8 @@ disposer();          // stops observing
 
 Only methods listed in `observableActions` trigger notifications. Calling unlisted methods mutates state silently — useful for internal helpers or batch setup.
 
+Observers are also notified, and computed values reset, when an action throws or its promise rejects: state changed before the error is never left stale.
+
 ## API
 
 ### `makeObservable(constructor)`
@@ -73,6 +74,17 @@ Instruments a class with observable capabilities. Call once per class.
 The class should declare:
 - `static observableActions` — method names that notify observers after execution
 - `static computedProperties` — getter names whose values are cached until the next action
+
+Listed names must be methods and getters of the class or of its parent classes. Anything else throws, including arrow functions assigned to class fields, which live on each instance rather than on the class:
+
+```javascript
+class Store {
+  static observableActions = ['increment'];
+  increment = () => {}; // TypeError: "increment" is listed in observableActions but is not a method
+}
+```
+
+A subclass of an observable class can call `makeObservable` too, to instrument the actions and getters it adds.
 
 ### `observe(target, callback, timeout?)`
 
@@ -88,11 +100,13 @@ const disposer = observe(counter, () => console.log('changed'));
 const disposer = observe(counter, () => console.log('changed'), 200);
 ```
 
+Disposing a throttled observer also cancels its pending trailing call.
+
 Notifications are batched via microtask: multiple synchronous actions on the same target produce a single callback invocation.
 
 ### `reaction(target, selector, effect, timeout?)`
 
-Runs `selector(target)` after each action. When the returned array differs element-wise from the previous result, calls `effect(...values)`. Return an empty array from `selector` to skip execution.
+Runs `selector(target)` once to record the starting values, then after each action. When the returned array differs element-wise (compared with `Object.is`) from the previous result, calls `effect(...values)`. Return an empty array from `selector` to skip execution.
 
 Returns a **disposer** function.
 
@@ -125,7 +139,7 @@ const disposer = reaction(
 
 ### `track(target, source)`
 
-Forwards notifications: when `source` changes, `target`'s observers are notified and its computed properties are invalidated.
+Forwards notifications: when `source` changes, `target`'s observers are notified and its computed properties are invalidated. Tracking that would form a cycle, such as `track(a, b)` together with `track(b, a)`, throws.
 
 Returns a **disposer** function.
 
@@ -182,11 +196,11 @@ class MyView extends LitElement {
 customElements.define('my-view', makeLitObserver(MyView));
 ```
 
-When a new object is assigned to an observed property, the old observer is disposed and a new one is bound automatically.
+When a new object is assigned to an observed property, the old observer is disposed and a new one is bound automatically. Inherited properties and properties declared with the `@property({ observe: true })` decorator are observed too. Assigning a value that is not an observable instance to such a property throws.
 
 ## Async actions
 
-Actions that return a `Promise` (whether declared `async` or not) notify observers after the promise resolves:
+Actions that return a `Promise` (whether declared `async` or not) notify observers after the promise settles, whether it resolves or rejects:
 
 ```javascript
 class Store {
@@ -202,7 +216,7 @@ class Store {
 makeObservable(Store);
 ```
 
-Intermediate state changes within an async action are not observable until the action completes. If you need to notify observers mid-action, split it into separate actions.
+Intermediate state changes within an async action are not observable until the action completes. If you need to notify observers mid-action, split it into separate actions. For the same reason, a method that returns a Promise which only settles later (a confirmation dialog waiting for the user, say) should not be an action: make the synchronous part an action and return the Promise from a plain method.
 
 ## Router
 
@@ -241,11 +255,11 @@ router.register(searchStore, {
 
 Each `register` call returns a disposer. The options object supports these optional fields:
 - `onRoute({ path, query, hash })` — URL to store. Called on registration, navigate, replace, and popstate.
-- `toURL()` — store to URL. Returns `{ path?, query?, hash?, replace? }`. The router merges results from all stores and syncs to the browser.
+- `toURL()` — store to URL. Returns `{ path?, query?, hash?, replace? }`. The router merges results from all stores and syncs to the browser. `null`, `undefined` and `''` values leave a key out; in `hash`, `''` gives a bare key (`#intro`).
 - `before({ path, query, hash })` — navigation guard. Return `false` or `Promise<false>` to block navigation.
-- `storage` — `sessionStorage` or `localStorage`. Persists the `toURL()` result and restores it via `onRoute` on registration.
+- `storage` and `key` — `sessionStorage` or `localStorage`, and the storage key to use. Persists the query and hash of `toURL()` and restores them on registration.
 
-Each store's `toURL` result is cached. When a store changes, only that store's `toURL` is called — the URL is rebuilt from all cached results. Removed keys disappear cleanly. If `toURL` returns `replace: true`, the router uses `replaceState` instead of `pushState`. Each store controls its own history behavior:
+When a registered store changes, the router calls every store's `toURL` and rebuilds the URL, so stores that change together produce a single history entry. Keys a store stops returning disappear. A new entry is pushed unless every store whose output changed returns `replace: true`, so each store controls its own history behavior:
 
 ```javascript
 // Filter changes replace the current history entry
@@ -265,16 +279,21 @@ router.register(appStore, {
 });
 ```
 
+Store changes caused by the router itself — registration, `navigate`, `replace`, Back and Forward — never push. If a store rewrites the URL it was just routed to (a default value, a canonical form), the current entry is replaced instead. The path, query or hash is left as it is until some store produces it, so a store that only manages the query keeps a plain `#anchor` intact.
+
 ### Navigation
 
 ```javascript
 router.navigate('/users/42');
+router.navigate('/users/42?tab=posts#top');
 router.navigate('/users/42', { query: { tab: 'posts' }, hash: { section: 'top' } });
 router.replace('/login');
 router.back();
 router.forward();
 router.destroy();
 ```
+
+`navigate` and `replace` go to exactly the URL they are given, like a link would: other stores receive a route without their params. Paths may be relative and carry a query string and a hash, which `query` and `hash` options extend. Navigating to the current URL replaces the entry instead of adding a duplicate. To change one store's part of the URL and keep the rest, call the store's action instead: its `toURL` updates the URL.
 
 ### Event delegation
 
@@ -290,7 +309,7 @@ html`
 `
 ```
 
-Skips external links, respects cmd/ctrl+click for new tab, reads `href` from any element — works with `<a>`, `<sp-button href="...">`, or any custom element.
+Reads `href` from any element — `<a>`, `<sp-button href="...">` or any custom element — including links inside the shadow roots of nested components. Relative hrefs resolve like the browser resolves them. Left to the browser: links to other origins, clicks with a modifier key or another mouse button, links with a `target` other than `_self` or a `download` attribute, clicks a handler already called `preventDefault()` on, and same-page `#anchor` links.
 
 ### Navigation guards
 
@@ -308,17 +327,18 @@ router.register(formStore, {
 });
 ```
 
-Guards run sequentially — the first `false` short-circuits, no further guards are called. For browser back/forward, the guard runs after the URL changes and pushes the old URL back if rejected.
+Guards run sequentially — the first `false` short-circuits, no further guards are called. For browser back/forward, the guard runs after the URL changes and pushes the old URL back if rejected. If a guard throws, the old URL is restored as well and the error propagates.
 
 ### Persisting store state
 
-Pass `storage: sessionStorage` or `storage: localStorage` to persist a store's URL state across page loads. On each store change the `toURL()` result is written to storage; on registration the stored value is passed to `onRoute` before the current URL is applied. The storage key is the store's class name.
+Pass `storage: sessionStorage` or `storage: localStorage`, with a `key`, to persist a store's URL state across page loads. Whenever the store's `toURL()` output changes, its query and hash are written to storage. On registration, stored values fill in the keys missing from the current URL — params in the URL win — then `onRoute` receives the combined route and the URL is updated with `replaceState`. `storage` requires `key`, `onRoute` and `toURL`, and a stored value that is not valid JSON throws an error naming the key.
 
 ```javascript
 router.register(filterStore, {
   onRoute({ query }) { filterStore.setFilters(query); },
   toURL() { return { query: filterStore.filters }; },
   storage: sessionStorage,  // survives page refresh; use localStorage to survive browser restart
+  key: 'filters',
 });
 ```
 
@@ -330,7 +350,7 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
 
 - [npm package](https://www.npmjs.com/package/picosm)
 - [GitHub repository](https://github.com/yesil/picosm)
-- [Live demos](https://yesil.github.io/picosm/examples/)
+- [Live tour](https://yesil.github.io/picosm/examples/)
 - [Issue tracker](https://github.com/yesil/picosm/issues)
 
 ## License

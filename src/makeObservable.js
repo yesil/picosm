@@ -1,66 +1,104 @@
+import { assertObservable, reportAsync } from './internal.js';
+
+const ACTION = Symbol('picosm.action');
+const COMPUTED = Symbol('picosm.computed');
+// Instances with a notification already queued for the current microtask
+const pendingNotifications = new WeakSet();
+
 /**
- * Instruments an action method to notify observers and reset computed properties after execution.
- * @param {Object} prototype - The prototype object containing the method
+ * Finds a property descriptor on the prototype or on one of its ancestors.
+ * @param {Object} prototype - The prototype to start from
+ * @param {string} name - The property name
+ * @returns {PropertyDescriptor|undefined}
+ */
+function findDescriptor(prototype, name) {
+  for (let proto = prototype; proto && proto !== Object.prototype; ) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, name);
+    if (descriptor) return descriptor;
+    proto = Object.getPrototypeOf(proto);
+  }
+  return undefined;
+}
+
+/**
+ * Instruments an action method to notify observers and reset computed properties after execution,
+ * including when it throws or its returned Promise rejects.
+ * @param {Function} constructor - The class declaring the action
  * @param {string} methodName - The name of the method to instrument
  */
-function instrumentAction(prototype, methodName) {
-  const descriptor = Object.getOwnPropertyDescriptor(prototype, methodName);
+function instrumentAction(constructor, methodName) {
+  const descriptor = findDescriptor(constructor.prototype, methodName);
 
-  if (descriptor && typeof descriptor.value === 'function') {
-    const originalMethod = descriptor.value;
+  if (typeof descriptor?.value !== 'function') {
+    throw new TypeError(
+      `makeObservable(${constructor.name}): "${methodName}" is listed in observableActions but is not a method (arrow functions and other class fields cannot be instrumented)`,
+    );
+  }
 
-    descriptor.value = function (...args) {
-      const response = originalMethod.call(this, ...args);
-      if (response instanceof Promise) {
-        return response.then((value) => {
-          this.__resetComputedProperties();
-          this.__notifyObservers();
-          return value;
-        });
-      }
+  const originalMethod = descriptor.value;
+  // Already instrumented by an observable base class
+  if (originalMethod[ACTION]) return;
+
+  descriptor.value = function (...args) {
+    const settle = () => {
       this.__resetComputedProperties();
       this.__notifyObservers();
-      return response;
     };
+    let response;
+    try {
+      response = originalMethod.call(this, ...args);
+    } catch (error) {
+      settle();
+      throw error;
+    }
+    if (response instanceof Promise) {
+      return response.finally(settle);
+    }
+    settle();
+    return response;
+  };
+  descriptor.value[ACTION] = true;
 
-    Object.defineProperty(prototype, methodName, descriptor);
-  }
+  Object.defineProperty(constructor.prototype, methodName, descriptor);
 }
 
 /**
  * Instruments a computed property to cache its value until invalidated.
- * @param {Object} prototype - The prototype object containing the getter
+ * @param {Function} constructor - The class declaring the computed property
  * @param {string} getterName - The name of the computed property
  */
-function instrumentComputed(prototype, getterName) {
-  const descriptor = Object.getOwnPropertyDescriptor(prototype, getterName);
+function instrumentComputed(constructor, getterName) {
+  const descriptor = findDescriptor(constructor.prototype, getterName);
 
-  if (descriptor && typeof descriptor.get === 'function') {
-    const originalGetter = descriptor.get;
-
-    descriptor.get = function () {
-      // Initialize computed properties cache if it doesn't exist
-      if (!this.__computedProperties) {
-        Object.defineProperty(this, '__computedProperties', {
-          value: new Map(),
-          enumerable: false,
-          writable: false,
-        });
-      }
-
-      // Return cached value if available
-      if (this.__computedProperties.has(getterName)) {
-        return this.__computedProperties.get(getterName);
-      }
-
-      // Calculate and cache the value
-      const cachedValue = originalGetter.call(this);
-      this.__computedProperties.set(getterName, cachedValue);
-      return cachedValue;
-    };
-
-    Object.defineProperty(prototype, getterName, descriptor);
+  if (typeof descriptor?.get !== 'function') {
+    throw new TypeError(
+      `makeObservable(${constructor.name}): "${getterName}" is listed in computedProperties but is not a getter`,
+    );
   }
+
+  const originalGetter = descriptor.get;
+  // Already instrumented by an observable base class
+  if (originalGetter[COMPUTED]) return;
+
+  descriptor.get = function () {
+    // Initialize computed properties cache if it doesn't exist
+    if (!this.__computedProperties) {
+      definePrivateProperty(this, '__computedProperties', new Map());
+    }
+
+    // Keyed by getter so an overriding getter and super's getter keep separate values
+    if (this.__computedProperties.has(originalGetter)) {
+      return this.__computedProperties.get(originalGetter);
+    }
+
+    // Calculate and cache the value
+    const cachedValue = originalGetter.call(this);
+    this.__computedProperties.set(originalGetter, cachedValue);
+    return cachedValue;
+  };
+  descriptor.get[COMPUTED] = true;
+
+  Object.defineProperty(constructor.prototype, getterName, descriptor);
 }
 
 /**
@@ -78,56 +116,94 @@ function definePrivateProperty(instance, propertyName, initialValue) {
 }
 
 /**
+ * Reads a static name list (observableActions or computedProperties) from the class.
+ * @param {Function} constructor - The class
+ * @param {string} listName - The static property holding the list
+ * @returns {string[]}
+ */
+function declaredNames(constructor, listName) {
+  const names = constructor[listName] ?? [];
+  if (!Array.isArray(names)) {
+    throw new TypeError(
+      `makeObservable(${constructor.name}): static ${listName} must be an array of names`,
+    );
+  }
+  return names;
+}
+
+const observableMethods = {
+  __notifyObservers() {
+    if (pendingNotifications.has(this)) return;
+    pendingNotifications.add(this);
+    queueMicrotask(() => {
+      pendingNotifications.delete(this);
+      if (!this.__observers) return;
+      // Iterate a snapshot: observers added now wait for the next change
+      for (const listener of [...this.__observers]) {
+        // Skip observers disposed by an earlier observer in this pass
+        if (!this.__observers.has(listener)) continue;
+        try {
+          listener();
+        } catch (error) {
+          // A failing observer must not keep the others from being notified
+          reportAsync(error);
+        }
+      }
+    });
+  },
+
+  __resetComputedProperties() {
+    this.__computedProperties?.clear();
+  },
+
+  __observe(callback) {
+    if (!this.__observers) {
+      definePrivateProperty(this, '__observers', new Set());
+    }
+    this.__observers.add(callback);
+    return () => this.__observers.delete(callback);
+  },
+
+  __subscribe(onMessageCallback) {
+    if (!this.__subscribers) {
+      definePrivateProperty(this, '__subscribers', new Set());
+    }
+    this.__subscribers.add(onMessageCallback);
+    return () => this.__subscribers.delete(onMessageCallback);
+  },
+};
+
+/**
  * Decorator function that makes a class observable by adding reactive capabilities.
  * Supports action methods, computed properties, and observer/subscriber patterns.
+ * Subclasses of an observable class can be passed too, to instrument their own declarations.
  * @param {Function} constructor - The class constructor to make observable
  */
 export function makeObservable(constructor) {
-  if (constructor.__observable) return;
-  constructor.__observable = true;
+  // Own check: a subclass inherits the flag of its observable base class
+  if (Object.hasOwn(constructor, '__observable')) return;
 
-  Object.assign(constructor.prototype, {
-    __notifyObservers() {
-      if (this.__notifyScheduled) return;
-      this.__notifyScheduled = true;
-      queueMicrotask(() => {
-        this.__notifyScheduled = false;
-        this.__observers?.forEach((listener) => listener());
+  if (!('__observe' in constructor.prototype)) {
+    for (const [name, value] of Object.entries(observableMethods)) {
+      Object.defineProperty(constructor.prototype, name, {
+        value,
+        writable: true,
+        configurable: true,
       });
-    },
-
-    __resetComputedProperties() {
-      this.__computedProperties?.clear();
-    },
-
-    __observe(callback) {
-      if (!this.__observers) {
-        definePrivateProperty(this, '__observers', new Set());
-      }
-      this.__observers.add(callback);
-      return () => this.__observers.delete(callback);
-    },
-
-    __subscribe(onMessageCallback) {
-      if (!this.__subscribers) {
-        definePrivateProperty(this, '__subscribers', new Set());
-      }
-      this.__subscribers.add(onMessageCallback);
-      return () => this.__subscribers.delete(onMessageCallback);
-    },
-  });
+    }
+  }
 
   // Instrument observable actions
-  const observableActions = constructor.observableActions ?? [];
-  observableActions.forEach((methodName) =>
-    instrumentAction(constructor.prototype, methodName),
-  );
+  for (const methodName of declaredNames(constructor, 'observableActions')) {
+    instrumentAction(constructor, methodName);
+  }
 
   // Instrument computed properties
-  const computedProperties = constructor.computedProperties ?? [];
-  computedProperties.forEach((propertyName) =>
-    instrumentComputed(constructor.prototype, propertyName),
-  );
+  for (const propertyName of declaredNames(constructor, 'computedProperties')) {
+    instrumentComputed(constructor, propertyName);
+  }
+
+  Object.defineProperty(constructor, '__observable', { value: true });
 }
 
 /**
@@ -138,42 +214,56 @@ export function makeObservable(constructor) {
  * @returns {Function} Cleanup function to remove the observer
  */
 function observeSlow(target, callback, timeout) {
-  let isThrottled = false;
+  let timer = null;
   let pendingCallback = false;
 
-  const listener = () => {
-    if (isThrottled) {
-      // Mark that a change occurred during throttle period
-      pendingCallback = true;
-      return;
-    }
-
-    // Execute callback immediately
-    callback();
-    isThrottled = true;
-
-    // Start throttle timer
-    setTimeout(() => {
-      isThrottled = false;
-      // If changes occurred during throttle period, execute one more time
+  // A change during the window runs once when it closes, which opens the next window
+  const startWindow = () => {
+    timer = setTimeout(() => {
+      timer = null;
       if (pendingCallback) {
         pendingCallback = false;
+        startWindow();
         callback();
       }
     }, timeout);
   };
 
-  return target.__observe(listener);
+  const listener = () => {
+    if (timer !== null) {
+      // Mark that a change occurred during throttle period
+      pendingCallback = true;
+      return;
+    }
+    startWindow();
+    callback();
+  };
+
+  const stopObserving = target.__observe(listener);
+  return () => {
+    stopObserving();
+    clearTimeout(timer);
+    timer = null;
+    pendingCallback = false;
+  };
+}
+
+function assertCallback(callback, caller) {
+  if (typeof callback !== 'function') {
+    throw new TypeError(`picosm: ${caller} expects a callback function`);
+  }
 }
 
 /**
- * Observes changes in an observable instance with optional debouncing
+ * Observes changes in an observable instance with optional throttling
  * @param {Object} target - The observable target
  * @param {Function} callback - The callback to execute on changes
- * @param {number} [timeout] - Optional timeout for debouncing
+ * @param {number} [timeout] - Optional throttle timeout in milliseconds
  * @returns {Function} Cleanup function to remove the observer
  */
 export function observe(target, callback, timeout) {
+  assertObservable(target, 'observe()');
+  assertCallback(callback, 'observe()');
   return timeout != null && timeout > 0
     ? observeSlow(target, callback, timeout)
     : target.__observe(callback);
@@ -186,6 +276,8 @@ export function observe(target, callback, timeout) {
  * @returns {Function} Cleanup function to remove the subscriber
  */
 export function subscribe(target, onMessageCallback) {
+  assertObservable(target, 'subscribe()');
+  assertCallback(onMessageCallback, 'subscribe()');
   return target.__subscribe(onMessageCallback);
 }
 
@@ -195,5 +287,9 @@ export function subscribe(target, onMessageCallback) {
  * @param {*} message - The message to send to subscribers
  */
 export function notify(target, message) {
-  target.__subscribers?.forEach((listener) => listener(message));
+  assertObservable(target, 'notify()');
+  if (!target.__subscribers) return;
+  for (const listener of [...target.__subscribers]) {
+    if (target.__subscribers.has(listener)) listener(message);
+  }
 }

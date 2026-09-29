@@ -5,6 +5,6 @@ const config = {
 };
 
 export default [
-  { ignores: ['dist/**', 'examples/**/swc.js'] },
+  { ignores: ['dist/**'] },
   config,
 ];

@@ -12,8 +12,8 @@
     },
     "./router": {
       "types": "./dist/router.d.ts",
-      "import": "./src/router.js",
-      "default": "./src/router.js"
+      "import": "./dist/picosm.js",
+      "default": "./dist/picosm.js"
     },
     "./src/*": "./src/*"
   },
@@ -22,7 +22,7 @@
     "lint": "eslint src test",
     "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch",
     "dev": "npx @web/dev-server -c web-dev-server.config.js",
-    "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm --minify --metafile=dist/meta.json && npx esbuild examples/swc.js --bundle --outfile=examples/cart/swc.js --format=esm --minify",
+    "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm --minify --metafile=meta.json",
     "prepublishOnly": "npm test && npm run build"
   },
   "type": "module",
@@ -55,15 +55,6 @@
   },
   "devDependencies": {
     "@esm-bundle/chai": "^4.3.4-fix.0",
-    "@spectrum-web-components/badge": "^1.11.2",
-    "@spectrum-web-components/button": "^1.11.2",
-    "@spectrum-web-components/card": "^1.11.2",
-    "@spectrum-web-components/field-label": "^1.11.2",
-    "@spectrum-web-components/menu": "^1.11.2",
-    "@spectrum-web-components/number-field": "^1.11.2",
-    "@spectrum-web-components/picker": "^1.11.2",
-    "@spectrum-web-components/table": "^1.11.2",
-    "@spectrum-web-components/theme": "^1.11.2",
     "@web/dev-server-esbuild": "^1.0.4",
     "@web/test-runner": "^0.19.0",
     "eslint": "^9.5.0",

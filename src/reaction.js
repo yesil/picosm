@@ -1,27 +1,33 @@
 import { observe } from './makeObservable.js';
+import { assertObservable } from './internal.js';
 
 export function reaction(targetOrTargets, callback, execute, timeout) {
-  let lastProps = [];
   const targets = Array.isArray(targetOrTargets)
     ? targetOrTargets
     : [targetOrTargets];
+  targets.forEach((t) => assertObservable(t, 'reaction()'));
 
-  const runner = () => {
+  const select = () => {
     const props =
       targets.length === 1 ? callback(targets[0]) : callback(...targets);
+    if (!Array.isArray(props)) {
+      throw new TypeError('picosm: reaction() selector must return an array');
+    }
+    return props;
+  };
+
+  // Baseline: the effect runs only when the selected values change after this point
+  let lastProps = select();
+
+  const runner = () => {
+    const props = select();
     if (props.length === 0) return;
-    if (lastProps.length > 0 && lastProps.length !== props.length) {
-      lastProps = props;
-      execute(...props);
-      return;
-    }
-    for (let i = 0; i < props.length; i++) {
-      if (lastProps[i] !== props[i]) {
-        lastProps = props;
-        execute(...props);
-        return;
-      }
-    }
+    const unchanged =
+      props.length === lastProps.length &&
+      props.every((value, i) => Object.is(value, lastProps[i]));
+    if (unchanged) return;
+    lastProps = props;
+    execute(...props);
   };
 
   const disposers = targets.map((t) => observe(t, runner, timeout));
