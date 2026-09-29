@@ -1,0 +1,11 @@
+[
+  { "id": "espresso", "name": "Espresso", "category": "coffee", "price": 2.8, "emoji": "☕" },
+  { "id": "cappuccino", "name": "Cappuccino", "category": "coffee", "price": 3.9, "emoji": "☕" },
+  { "id": "latte", "name": "Caffè latte", "category": "coffee", "price": 4.2, "emoji": "🥛" },
+  { "id": "flat-white", "name": "Flat white", "category": "coffee", "price": 4, "emoji": "☕" },
+  { "id": "matcha", "name": "Matcha latte", "category": "tea", "price": 4.6, "emoji": "🍵" },
+  { "id": "chai", "name": "Chai", "category": "tea", "price": 3.8, "emoji": "🫖" },
+  { "id": "croissant", "name": "Croissant", "category": "bakery", "price": 2.9, "emoji": "🥐" },
+  { "id": "cookie", "name": "Cookie", "category": "bakery", "price": 2.2, "emoji": "🍪" },
+  { "id": "brownie", "name": "Brownie", "category": "bakery", "price": 3.2, "emoji": "🍫" }
+]

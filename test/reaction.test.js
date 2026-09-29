@@ -1,9 +1,27 @@
 import { spy } from 'sinon';
 import { expect } from '@esm-bundle/chai';
+import { makeObservable } from '../src/makeObservable.js';
 import { reaction } from '../src/reaction.js';
 import TestStore from './TestStore.js';
 
 const flush = () => new Promise((r) => queueMicrotask(r));
+
+class Pair {
+  static observableActions = ['setA', 'setB'];
+
+  a = 1;
+  b = 1;
+
+  setA(value) {
+    this.a = value;
+  }
+
+  setB(value) {
+    this.b = value;
+  }
+}
+
+makeObservable(Pair);
 
 describe('Pico State Manager', () => {
 
@@ -75,5 +93,51 @@ describe('Pico State Manager', () => {
     }
 
     expect(execute.callCount).to.equal(1);
+  });
+  it('runs the effect only when the selected values change', async () => {
+    const pair = new Pair();
+    const execute = spy();
+    reaction(pair, ({ a }) => [a], execute);
+
+    pair.setB(2);
+    await flush();
+    expect(execute.callCount).to.equal(0);
+
+    pair.setA(2);
+    await flush();
+    expect(execute.callCount).to.equal(1);
+    expect(execute.firstCall.args).to.deep.equal([2]);
+
+    pair.setA(2);
+    await flush();
+    expect(execute.callCount).to.equal(1);
+  });
+
+  it('compares the selected values with Object.is', async () => {
+    const pair = new Pair();
+    pair.a = NaN;
+    const execute = spy();
+    reaction(pair, ({ a }) => [a], execute);
+
+    pair.setB(2);
+    await flush();
+    pair.setA(NaN);
+    await flush();
+
+    expect(execute.callCount).to.equal(0);
+  });
+
+  it('requires the selector to return an array', () => {
+    expect(() => reaction(new Pair(), ({ a }) => a, () => {})).to.throw(
+      TypeError,
+      /selector must return an array/,
+    );
+  });
+
+  it('throws a descriptive error for targets that are not observable', () => {
+    expect(() => reaction({}, () => [], () => {})).to.throw(
+      TypeError,
+      /reaction\(\) expects an instance of a class passed to makeObservable\(\)/,
+    );
   });
 });

@@ -3,90 +3,278 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>picosm — Live examples</title>
+    <title>picosm · live tour</title>
+    <meta
+      name="description"
+      content="Every picosm capability, live: actions and batching, computed getters, async actions, throttled observers, reactions, tracking, messages, Lit integration and the store-driven router."
+    />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>☕</text></svg>"
+    />
+    <script type="importmap">
+      {
+        "imports": {
+          "lit": "https://cdn.jsdelivr.net/gh/lit/dist@3.3.3/all/lit-all.min.js"
+        }
+      }
+    </script>
     <style>
       :root {
-        --bg: #0d1117;
-        --panel: #161b22;
-        --border: #30363d;
-        --text: #e6edf3;
-        --muted: #8b949e;
-        --accent: #58a6ff;
+        color-scheme: light;
+        --bg: #f7f2eb;
+        --surface: #fffdf9;
+        --surface-2: #f3ece2;
+        --border: #e8ddcf;
+        --border-strong: #d5c4af;
+        --text: #2a1f17;
+        --text-muted: #6f5f53;
+        --accent: #b0581b;
+        --accent-strong: #8a410d;
+        --accent-soft: #f7e3d0;
+        --on-accent: #ffffff;
+        --danger: #b3261e;
+        --success: #2e7d32;
+        --code-bg: #241b15;
+        --code-text: #f2e7da;
+        --code-keyword: #f3a45e;
+        --code-string: #b9da8f;
+        --code-comment: #a08d7c;
+        --code-number: #8fcbeb;
+        --kind-action: #2f6fdb;
+        --kind-notify: #7a4fd4;
+        --kind-reaction: #b86f00;
+        --kind-message: #c2417a;
+        --kind-router: #2e8540;
+        --kind-error: #c62828;
+        --radius: 16px;
+        --shadow: 0 1px 2px rgb(42 31 23 / 5%), 0 12px 32px -16px rgb(42 31 23 / 22%);
+        --font: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue',
+          Arial, sans-serif;
+        --mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, monospace;
       }
-      * { box-sizing: border-box; }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #14100c;
+          --surface: #1e1712;
+          --surface-2: #29201a;
+          --border: #382c23;
+          --border-strong: #4d3e32;
+          --text: #f4ece3;
+          --text-muted: #b8a797;
+          --accent: #e8914f;
+          --accent-strong: #f5ad74;
+          --accent-soft: #3c2a1c;
+          --on-accent: #1d130b;
+          --danger: #ff8a80;
+          --success: #7fcf86;
+          --code-bg: #0f0b08;
+          --kind-action: #82b1ff;
+          --kind-notify: #b89cff;
+          --kind-reaction: #ffc766;
+          --kind-message: #ff8fc0;
+          --kind-router: #80d98f;
+          --kind-error: #ff8a80;
+          --shadow: 0 1px 2px rgb(0 0 0 / 35%);
+        }
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
         background: var(--bg);
         color: var(--text);
-        line-height: 1.6;
+        font: 15px/1.5 var(--font);
+        -webkit-font-smoothing: antialiased;
       }
-      .wrap { max-width: 720px; margin: 0 auto; padding: 64px 24px; }
-      header { margin-bottom: 40px; }
-      h1 { font-size: 40px; margin: 0 0 8px; letter-spacing: -0.02em; }
-      .tagline { color: var(--muted); font-size: 18px; margin: 0 0 20px; }
-      .links { display: flex; flex-wrap: wrap; gap: 16px; align-items: center; }
-      .links a { color: var(--accent); text-decoration: none; font-size: 15px; }
-      .links a:hover { text-decoration: underline; }
-      code {
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 6px;
-        padding: 2px 8px;
+
+      a {
+        color: var(--accent-strong);
+      }
+
+      a:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+        border-radius: 4px;
+      }
+
+      .shell {
+        max-width: 1240px;
+        margin: 0 auto;
+        padding: 28px 20px 48px;
+      }
+
+      .hero {
+        display: grid;
+        gap: 18px;
+        padding-bottom: 28px;
+      }
+
+      .hero-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+      }
+
+      .wordmark {
+        font: 700 20px var(--mono);
+        letter-spacing: -0.02em;
+      }
+
+      .wordmark::before {
+        content: '●';
+        margin-right: 6px;
+        color: var(--accent);
+      }
+
+      .hero-links {
+        display: flex;
+        gap: 18px;
         font-size: 14px;
       }
-      .demos { display: grid; gap: 16px; }
-      .card {
-        display: block;
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        padding: 20px 24px;
+
+      .hero-links a {
+        color: var(--text-muted);
         text-decoration: none;
-        color: inherit;
-        transition: border-color 0.15s, transform 0.15s;
       }
-      .card:hover { border-color: var(--accent); transform: translateY(-2px); }
-      .card h2 { margin: 0 0 6px; font-size: 19px; color: var(--accent); }
-      .card p { margin: 0; color: var(--muted); font-size: 15px; }
-      footer { margin-top: 48px; color: var(--muted); font-size: 14px; }
-      footer a { color: var(--accent); text-decoration: none; }
+
+      .hero-links a:hover {
+        color: var(--text);
+      }
+
+      h1 {
+        max-width: 18ch;
+        margin: 12px 0 0;
+        font-size: clamp(34px, 6vw, 56px);
+        line-height: 1.05;
+        letter-spacing: -0.035em;
+      }
+
+      h1 em {
+        color: var(--accent);
+        font-style: normal;
+      }
+
+      .lede {
+        max-width: 64ch;
+        margin: 0;
+        color: var(--text-muted);
+        font-size: 17px;
+      }
+
+      .install {
+        justify-self: start;
+        padding: 8px 14px;
+        border-radius: 10px;
+        background: var(--code-bg);
+        color: var(--code-text);
+        font: 14px var(--mono);
+      }
+
+      .install::before {
+        content: '$ ';
+        color: var(--code-comment);
+      }
+
+      .toc {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 6px;
+      }
+
+      .toc a {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 12px 5px 6px;
+        border: 1px solid var(--border-strong);
+        border-radius: 999px;
+        background: var(--surface);
+        color: var(--text);
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .toc a:hover {
+        border-color: var(--accent);
+      }
+
+      .toc span {
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        color: var(--accent-strong);
+        font: 600 11.5px var(--mono);
+      }
+
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        gap: 24px;
+        align-items: start;
+      }
+
+      .cards {
+        display: grid;
+        gap: 22px;
+        min-width: 0;
+      }
+
+      .cards > [id] {
+        scroll-margin-top: 16px;
+      }
+
+      .side {
+        position: sticky;
+        top: 16px;
+        min-width: 0;
+      }
+
+      .footer {
+        margin-top: 36px;
+        color: var(--text-muted);
+        font-size: 14px;
+        text-align: center;
+      }
+
+      @media (max-width: 1060px) {
+        .layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
+
+        .side {
+          position: static;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .shell {
+          padding: 20px 16px 40px;
+        }
+      }
     </style>
+    <script type="module" src="./app.js"></script>
   </head>
   <body>
-    <div class="wrap">
-      <header>
-        <h1>picosm</h1>
-        <p class="tagline">
-          Lightweight, zero-dependency state manager for observable classes.
-        </p>
-        <p><code>npm install picosm</code></p>
-        <div class="links">
-          <a href="https://www.npmjs.com/package/picosm">npm</a>
-          <a href="https://github.com/yesil/picosm">GitHub</a>
-          <a href="https://github.com/yesil/picosm#readme">Documentation</a>
-        </div>
-      </header>
-
-      <main class="demos">
-        <a class="card" href="cart/index.html">
-          <h2>Shopping cart + Router</h2>
-          <p>Lit + Spectrum Web Components: filters, product detail, cart drawer, store-driven routing.</p>
-        </a>
-        <a class="card" href="stars/index.html">
-          <h2>Stars canvas</h2>
-          <p>Throttled observer and connected stars via tracking (hold the meta key to connect).</p>
-        </a>
-        <a class="card" href="minigame/index.html">
-          <h2>Minigame</h2>
-          <p>A small interactive game driven entirely by observable state.</p>
-        </a>
-      </main>
-
-      <footer>
-        Built with <a href="https://github.com/yesil/picosm">picosm</a> ·
-        ISC licensed
-      </footer>
-    </div>
+    <noscript>This tour runs picosm live and needs JavaScript.</noscript>
   </body>
 </html>
