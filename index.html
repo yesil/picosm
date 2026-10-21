@@ -32,7 +32,6 @@
 <li><a class="file" href="#how-it-works">how-it-works.md</a><ul><li><a class="symbol" href="#stores-are-classes">Stores are classes</a></li><li><a class="symbol" href="#views-subscribe">Views subscribe</a></li><li><a class="symbol" href="#updates-are-batched">Updates are batched</a></li><li><a class="symbol" href="#without-a-bundler">Without a bundler</a></li><li><a class="symbol" href="#the-trade-off">The trade-off</a></li></ul></li>
 <li><a class="file" href="#api">api.md</a><ul><li><a class="symbol" href="#makeobservableconstructor"><code>makeObservable(constructor)</code></a></li><li><a class="symbol" href="#observetarget-callback-timeout"><code>observe(target, callback, timeout?)</code></a></li><li><a class="symbol" href="#reactiontarget-selector-effect-timeout"><code>reaction(target, selector, effect, timeout?)</code></a></li><li><a class="symbol" href="#tracktarget-source"><code>track(target, source)</code></a></li><li><a class="symbol" href="#subscribetarget-callback-notifytarget-message"><code>subscribe(target, callback)</code> / <code>notify(target, message)</code></a></li><li><a class="symbol" href="#async-actions">Async actions</a></li></ul></li>
 <li><a class="file" href="#lit">lit.md</a></li>
-<li><a class="file" href="#growing">growing.md</a><ul><li><a class="symbol" href="#more-stores">More stores</a></li><li><a class="symbol" href="#urls-and-lit">URLs and Lit</a></li></ul></li>
 <li><a class="file" href="#routing">routing.md</a><ul><li><a class="symbol" href="#registering-stores">Registering stores</a></li><li><a class="symbol" href="#navigation">Navigation</a></li><li><a class="symbol" href="#event-delegation">Event delegation</a></li><li><a class="symbol" href="#refresh-and-deep-links">Refresh and deep links</a></li><li><a class="symbol" href="#navigation-guards">Navigation guards</a></li><li><a class="symbol" href="#persisting-store-state">Persisting store state</a></li></ul></li>
 </ul></li></ul>
       </nav>
@@ -251,75 +250,6 @@
 <span class="line">customElements.<span class="hljs-title function_">define</span>(<span class="hljs-string">&#x27;my-view&#x27;</span>, <span class="hljs-title function_">makeLitObserver</span>(<span class="hljs-title class_">MyView</span>));</span></code></pre>
 <p>When a new object is assigned to an observed property, the old observer is disposed and a new one is bound automatically. Inherited properties are observed too. Assigning a value that is not an observable instance to such a property throws.</p>
 <p>The observer doesn&#39;t replay changes the element missed while it was detached. If the store can change in that time, call <code>this.requestUpdate()</code> after <code>super.connectedCallback()</code> in your own <code>connectedCallback</code>. When a store is only ever set as a property, declare it with <code>attribute: false</code> so Lit doesn&#39;t also look for an HTML attribute of that name.</p>
-</div></section>
-<section aria-labelledby="growing"><div class="tab-bar" aria-hidden="true"><span class="tab">growing.md</span></div><div class="doc"><h2 id="growing">As the app grows</h2>
-<p>Split the page into modules the browser loads on its own. Nothing changes in how the store and the views talk to each other.</p>
-<pre class="language-text"><code><span class="line">index.html</span>
-<span class="line">stores/cart.js</span>
-<span class="line">elements/cart-count.js</span>
-<span class="line">elements/cart-total.js</span></code></pre>
-<p><code>stores/cart.js</code> exports the store instance:</p>
-<pre class="language-javascript"><code><span class="line"><span class="hljs-keyword">import</span> { makeObservable } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;picosm&#x27;</span>;</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-keyword">class</span> <span class="hljs-title class_">Cart</span> {</span>
-<span class="line">  <span class="hljs-keyword">static</span> observableActions = [<span class="hljs-string">&#x27;add&#x27;</span>, <span class="hljs-string">&#x27;clear&#x27;</span>];</span>
-<span class="line">  <span class="hljs-keyword">static</span> computedProperties = [<span class="hljs-string">&#x27;total&#x27;</span>];</span>
-<span class="line">  items = [];</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-title function_">add</span>(<span class="hljs-params">name, price</span>) {</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-property">items</span>.<span class="hljs-title function_">push</span>({ name, price });</span>
-<span class="line">  }</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-title function_">clear</span>(<span class="hljs-params"></span>) {</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-property">items</span> = [];</span>
-<span class="line">  }</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-keyword">get</span> <span class="hljs-title function_">total</span>() {</span>
-<span class="line">    <span class="hljs-keyword">return</span> <span class="hljs-variable language_">this</span>.<span class="hljs-property">items</span>.<span class="hljs-title function_">reduce</span>(<span class="hljs-function">(<span class="hljs-params">sum, item</span>) =&gt;</span> sum + item.<span class="hljs-property">price</span>, <span class="hljs-number">0</span>);</span>
-<span class="line">  }</span>
-<span class="line">}</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-title function_">makeObservable</span>(<span class="hljs-title class_">Cart</span>);</span>
-<span class="line"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> cart = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Cart</span>();</span></code></pre>
-<p>Each element imports it:</p>
-<pre class="language-javascript"><code><span class="line"><span class="hljs-keyword">import</span> { observe } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;picosm&#x27;</span>;</span>
-<span class="line"><span class="hljs-keyword">import</span> { cart } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;../stores/cart.js&#x27;</span>;</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-keyword">class</span> <span class="hljs-title class_">CartCount</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_ inherited__">HTMLElement</span> {</span>
-<span class="line">  <span class="hljs-title function_">connectedCallback</span>(<span class="hljs-params"></span>) {</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-property">dispose</span> = <span class="hljs-title function_">observe</span>(cart, <span class="hljs-function">() =&gt;</span> <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">render</span>());</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">render</span>();</span>
-<span class="line">  }</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-title function_">disconnectedCallback</span>(<span class="hljs-params"></span>) {</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-title function_">dispose</span>();</span>
-<span class="line">  }</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-title function_">render</span>(<span class="hljs-params"></span>) {</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-property">textContent</span> = cart.<span class="hljs-property">items</span>.<span class="hljs-property">length</span>;</span>
-<span class="line">  }</span>
-<span class="line">}</span>
-<span class="line"></span>
-<span class="line">customElements.<span class="hljs-title function_">define</span>(<span class="hljs-string">&#x27;cart-count&#x27;</span>, <span class="hljs-title class_">CartCount</span>);</span></code></pre>
-<p><code>index.html</code> keeps the import map and loads each element with a <code>&lt;script type=&quot;module&quot;&gt;</code> tag. The browser loads a module once per URL, so every file that imports <code>stores/cart.js</code> gets the same <code>cart</code>.</p>
-<h3 id="more-stores">More stores</h3>
-<p>Give each concern its own store, and connect stores with <code>track</code>. Here <code>checkout</code> derives shipping from the cart: <code>track(checkout, cart)</code> clears its cached getters and notifies its subscribers whenever <code>cart</code> changes.</p>
-<pre class="language-javascript"><code><span class="line"><span class="hljs-keyword">import</span> { makeObservable, track } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;picosm&#x27;</span>;</span>
-<span class="line"><span class="hljs-keyword">import</span> { cart } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./cart.js&#x27;</span>;</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-keyword">class</span> <span class="hljs-title class_">Checkout</span> {</span>
-<span class="line">  <span class="hljs-keyword">static</span> computedProperties = [<span class="hljs-string">&#x27;shipping&#x27;</span>];</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-keyword">get</span> <span class="hljs-title function_">shipping</span>() {</span>
-<span class="line">    <span class="hljs-keyword">return</span> cart.<span class="hljs-property">total</span> &gt;= <span class="hljs-number">30</span> ? <span class="hljs-number">0</span> : <span class="hljs-number">4.5</span>;</span>
-<span class="line">  }</span>
-<span class="line">}</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-title function_">makeObservable</span>(<span class="hljs-title class_">Checkout</span>);</span>
-<span class="line"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> checkout = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Checkout</span>();</span>
-<span class="line"><span class="hljs-title function_">track</span>(checkout, cart);</span></code></pre>
-<h3 id="urls-and-lit">URLs and Lit</h3>
-<p>The <a href="#routing">router</a> puts store state in the URL, with plain links and deep links that survive a refresh. Lit components can use the same stores through <a href="#lit"><code>makeLitObserver</code></a>.</p>
 </div></section>
 <section aria-labelledby="routing"><div class="tab-bar" aria-hidden="true"><span class="tab">routing.md</span></div><div class="doc"><h2 id="routing">Router</h2>
 <p><code>createRouter</code> coordinates multiple stores with the browser History API. Each store registers itself and decides what part of the URL it owns. The router parses and serializes query/hash as objects — stores never touch strings.</p>

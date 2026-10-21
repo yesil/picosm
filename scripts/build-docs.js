@@ -38,12 +38,6 @@ const sections = [
     description: 'Using stores from Lit components with makeLitObserver.',
   },
   {
-    slug: 'growing',
-    nav: 'As the app grows',
-    description:
-      'The same app split into modules the browser loads directly, and stores connected with track.',
-  },
-  {
     slug: 'routing',
     nav: 'Router',
     description:
