@@ -11,8 +11,7 @@ Only methods listed in `observableActions` notify subscribers and clear cached g
 - [API reference](https://yesil.github.io/picosm/docs/api.md): makeObservable, observe, reaction, track, subscribe/notify and async actions.
 - [Lit](https://yesil.github.io/picosm/docs/lit.md): Using stores from Lit components with makeLitObserver.
 - [As the app grows](https://yesil.github.io/picosm/docs/growing.md): The same app split into modules the browser loads directly, and stores connected with track.
-- [Routing with the History API](https://yesil.github.io/picosm/docs/history-routing.md): Plain links handled by router.go, path and query owned by one store, and deep links that survive a refresh.
-- [Router](https://yesil.github.io/picosm/docs/routing.md): createRouter and register: URL ownership, history, navigation, guards and storage.
+- [Router](https://yesil.github.io/picosm/docs/routing.md): createRouter and register: URL ownership, history, links with router.go, deep links that survive a refresh, guards and storage.
 - [Coding assistant guide](https://yesil.github.io/picosm/docs/assistant-guide.md): Rules and a complete example for writing picosm code.
 
 ## Project

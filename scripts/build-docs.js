@@ -44,16 +44,10 @@ const sections = [
       'The same app split into modules the browser loads directly, and stores connected with track.',
   },
   {
-    slug: 'history-routing',
-    nav: 'Routing with the History API',
-    description:
-      'Plain links handled by router.go, path and query owned by one store, and deep links that survive a refresh.',
-  },
-  {
     slug: 'routing',
     nav: 'Router',
     description:
-      'createRouter and register: URL ownership, history, navigation, guards and storage.',
+      'createRouter and register: URL ownership, history, links with router.go, deep links that survive a refresh, guards and storage.',
   },
 ];
 
@@ -104,7 +98,7 @@ await writeFile(
 );
 await writeFile(
   new URL('docs/routing.md', root),
-  `# Router\n\n${promote(router)}\n\nFor a worked example, see [routing with the History API](history-routing.md).\n`,
+  `# Router\n\n${promote(router)}\n`,
 );
 
 // The app shown at the top of the docs is also published as a runnable page, from the same code block

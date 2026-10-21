@@ -85,4 +85,4 @@ track(checkout, cart);
 
 ## URLs and Lit
 
-[Routing with the History API](history-routing.md) puts store state in the URL, with plain links and deep links that survive a refresh. Lit components can use the same stores through [`makeLitObserver`](lit.md).
+The [router](routing.md) puts store state in the URL, with plain links and deep links that survive a refresh. Lit components can use the same stores through [`makeLitObserver`](lit.md).

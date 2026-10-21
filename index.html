@@ -33,8 +33,7 @@
 <li><a class="file" href="#api">api.md</a><ul><li><a class="symbol" href="#makeobservableconstructor"><code>makeObservable(constructor)</code></a></li><li><a class="symbol" href="#observetarget-callback-timeout"><code>observe(target, callback, timeout?)</code></a></li><li><a class="symbol" href="#reactiontarget-selector-effect-timeout"><code>reaction(target, selector, effect, timeout?)</code></a></li><li><a class="symbol" href="#tracktarget-source"><code>track(target, source)</code></a></li><li><a class="symbol" href="#subscribetarget-callback-notifytarget-message"><code>subscribe(target, callback)</code> / <code>notify(target, message)</code></a></li><li><a class="symbol" href="#async-actions">Async actions</a></li></ul></li>
 <li><a class="file" href="#lit">lit.md</a></li>
 <li><a class="file" href="#growing">growing.md</a><ul><li><a class="symbol" href="#more-stores">More stores</a></li><li><a class="symbol" href="#urls-and-lit">URLs and Lit</a></li></ul></li>
-<li><a class="file" href="#history-routing">history-routing.md</a><ul><li><a class="symbol" href="#links-without-page-loads">Links without page loads</a></li><li><a class="symbol" href="#refresh-and-deep-links">Refresh and deep links</a></li><li><a class="symbol" href="#several-stores-one-url">Several stores, one URL</a></li><li><a class="symbol" href="#history-entries">History entries</a></li></ul></li>
-<li><a class="file" href="#routing">routing.md</a><ul><li><a class="symbol" href="#registering-stores">Registering stores</a></li><li><a class="symbol" href="#navigation">Navigation</a></li><li><a class="symbol" href="#event-delegation">Event delegation</a></li><li><a class="symbol" href="#navigation-guards">Navigation guards</a></li><li><a class="symbol" href="#persisting-store-state">Persisting store state</a></li></ul></li>
+<li><a class="file" href="#routing">routing.md</a><ul><li><a class="symbol" href="#registering-stores">Registering stores</a></li><li><a class="symbol" href="#navigation">Navigation</a></li><li><a class="symbol" href="#event-delegation">Event delegation</a></li><li><a class="symbol" href="#refresh-and-deep-links">Refresh and deep links</a></li><li><a class="symbol" href="#navigation-guards">Navigation guards</a></li><li><a class="symbol" href="#persisting-store-state">Persisting store state</a></li></ul></li>
 </ul></li></ul>
       </nav>
     </aside>
@@ -320,108 +319,7 @@
 <span class="line"><span class="hljs-keyword">export</span> <span class="hljs-keyword">const</span> checkout = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Checkout</span>();</span>
 <span class="line"><span class="hljs-title function_">track</span>(checkout, cart);</span></code></pre>
 <h3 id="urls-and-lit">URLs and Lit</h3>
-<p><a href="#history-routing">Routing with the History API</a> puts store state in the URL, with plain links and deep links that survive a refresh. Lit components can use the same stores through <a href="#lit"><code>makeLitObserver</code></a>.</p>
-</div></section>
-<section aria-labelledby="history-routing"><div class="tab-bar" aria-hidden="true"><span class="tab">history-routing.md</span></div><div class="doc"><h2 id="history-routing">Routing with the History API</h2>
-<p>Links stay plain <code>&lt;a href&gt;</code> elements. One click handler, <code>router.go</code>, turns clicks on them into History API navigation instead of page loads, and the store that owns the page state registers with the router. Reload a deep link such as <code>/menu/latte?size=large</code> and the page comes back in the same state.</p>
-<h3 id="links-without-page-loads">Links without page loads</h3>
-<p>The page is static HTML. The module script uses a root-absolute URL; the <a href="#refresh-and-deep-links">refresh section</a> explains why.</p>
-<pre class="language-html"><code><span class="line"><span class="hljs-meta">&lt;!doctype <span class="hljs-keyword">html</span>&gt;</span></span>
-<span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">html</span> <span class="hljs-attr">lang</span>=<span class="hljs-string">&quot;en&quot;</span>&gt;</span></span>
-<span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">head</span>&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">meta</span> <span class="hljs-attr">charset</span>=<span class="hljs-string">&quot;utf-8&quot;</span> /&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">title</span>&gt;</span>Menu<span class="hljs-tag">&lt;/<span class="hljs-name">title</span>&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;importmap&quot;</span>&gt;</span><span class="language-javascript"></span></span>
-<span class="line"><span class="language-javascript">      {</span></span>
-<span class="line"><span class="language-javascript">        <span class="hljs-string">&quot;imports&quot;</span>: {</span></span>
-<span class="line"><span class="language-javascript">          <span class="hljs-string">&quot;picosm&quot;</span>: <span class="hljs-string">&quot;https://cdn.jsdelivr.net/npm/picosm@3.0.0/dist/picosm.js&quot;</span>,</span></span>
-<span class="line"><span class="language-javascript">          <span class="hljs-string">&quot;picosm/router&quot;</span>: <span class="hljs-string">&quot;https://cdn.jsdelivr.net/npm/picosm@3.0.0/dist/picosm.js&quot;</span></span></span>
-<span class="line"><span class="language-javascript">        }</span></span>
-<span class="line"><span class="language-javascript">      }</span></span>
-<span class="line"><span class="language-javascript">    </span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">script</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;module&quot;</span> <span class="hljs-attr">src</span>=<span class="hljs-string">&quot;/app.js&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">script</span>&gt;</span></span>
-<span class="line">  <span class="hljs-tag">&lt;/<span class="hljs-name">head</span>&gt;</span></span>
-<span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">body</span>&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">nav</span>&gt;</span></span>
-<span class="line">      <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;/menu/espresso&quot;</span>&gt;</span>Espresso<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span>
-<span class="line">      <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;/menu/latte&quot;</span>&gt;</span>Caffè latte<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span>
-<span class="line">      <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;/menu/chai?size=large&quot;</span>&gt;</span>Large chai<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">h1</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;title&quot;</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">h1</span>&gt;</span></span>
-<span class="line">    <span class="hljs-tag">&lt;<span class="hljs-name">label</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">input</span> <span class="hljs-attr">id</span>=<span class="hljs-string">&quot;large&quot;</span> <span class="hljs-attr">type</span>=<span class="hljs-string">&quot;checkbox&quot;</span> /&gt;</span> Large<span class="hljs-tag">&lt;/<span class="hljs-name">label</span>&gt;</span></span>
-<span class="line">  <span class="hljs-tag">&lt;/<span class="hljs-name">body</span>&gt;</span></span>
-<span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">html</span>&gt;</span></span></code></pre>
-<p>One <code>Menu</code> store owns both values in the URL: the drink in the path and the size in the query. It&#39;s the store you register. Don&#39;t add a separate store just to hold URL values, because that&#39;s a second copy to keep in sync.</p>
-<pre class="language-javascript"><code><span class="line"><span class="hljs-keyword">import</span> { makeObservable, observe } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;picosm&#x27;</span>;</span>
-<span class="line"><span class="hljs-keyword">import</span> { createRouter } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;picosm/router&#x27;</span>;</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-keyword">class</span> <span class="hljs-title class_">Menu</span> {</span>
-<span class="line">  <span class="hljs-keyword">static</span> observableActions = [<span class="hljs-string">&#x27;show&#x27;</span>, <span class="hljs-string">&#x27;setSize&#x27;</span>];</span>
-<span class="line">  drinks = { <span class="hljs-attr">espresso</span>: <span class="hljs-string">&#x27;Espresso&#x27;</span>, <span class="hljs-attr">latte</span>: <span class="hljs-string">&#x27;Caffè latte&#x27;</span>, <span class="hljs-attr">chai</span>: <span class="hljs-string">&#x27;Chai&#x27;</span> };</span>
-<span class="line">  drink = <span class="hljs-literal">null</span>;</span>
-<span class="line">  size = <span class="hljs-string">&#x27;regular&#x27;</span>;</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-title function_">show</span>(<span class="hljs-params">id</span>) {</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-property">drink</span> = <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">hasOwn</span>(<span class="hljs-variable language_">this</span>.<span class="hljs-property">drinks</span>, id) ? id : <span class="hljs-literal">null</span>;</span>
-<span class="line">  }</span>
-<span class="line"></span>
-<span class="line">  <span class="hljs-title function_">setSize</span>(<span class="hljs-params">size</span>) {</span>
-<span class="line">    <span class="hljs-variable language_">this</span>.<span class="hljs-property">size</span> = size === <span class="hljs-string">&#x27;large&#x27;</span> ? <span class="hljs-string">&#x27;large&#x27;</span> : <span class="hljs-string">&#x27;regular&#x27;</span>;</span>
-<span class="line">  }</span>
-<span class="line">}</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-title function_">makeObservable</span>(<span class="hljs-title class_">Menu</span>);</span>
-<span class="line"><span class="hljs-keyword">const</span> menu = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Menu</span>();</span>
-<span class="line"><span class="hljs-keyword">const</span> router = <span class="hljs-title function_">createRouter</span>();</span>
-<span class="line"></span>
-<span class="line">router.<span class="hljs-title function_">register</span>(menu, {</span>
-<span class="line">  <span class="hljs-title function_">onRoute</span>(<span class="hljs-params">{ path, query }</span>) {</span>
-<span class="line">    menu.<span class="hljs-title function_">show</span>(path.<span class="hljs-title function_">split</span>(<span class="hljs-string">&#x27;/&#x27;</span>)[<span class="hljs-number">2</span>]);</span>
-<span class="line">    menu.<span class="hljs-title function_">setSize</span>(query.<span class="hljs-property">size</span>);</span>
-<span class="line">  },</span>
-<span class="line">  <span class="hljs-title function_">toURL</span>(<span class="hljs-params"></span>) {</span>
-<span class="line">    <span class="hljs-keyword">return</span> {</span>
-<span class="line">      <span class="hljs-attr">path</span>: menu.<span class="hljs-property">drink</span> ? <span class="hljs-string">`/menu/<span class="hljs-subst">${menu.drink}</span>`</span> : <span class="hljs-string">&#x27;/menu&#x27;</span>,</span>
-<span class="line">      <span class="hljs-attr">query</span>: { <span class="hljs-attr">size</span>: menu.<span class="hljs-property">size</span> === <span class="hljs-string">&#x27;large&#x27;</span> ? <span class="hljs-string">&#x27;large&#x27;</span> : <span class="hljs-literal">null</span> },</span>
-<span class="line">      <span class="hljs-attr">replace</span>: <span class="hljs-literal">true</span>,</span>
-<span class="line">    };</span>
-<span class="line">  },</span>
-<span class="line">});</span>
-<span class="line"><span class="hljs-variable language_">document</span>.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;click&#x27;</span>, router.<span class="hljs-property">go</span>);</span>
-<span class="line"></span>
-<span class="line"><span class="hljs-keyword">const</span> title = <span class="hljs-variable language_">document</span>.<span class="hljs-title function_">querySelector</span>(<span class="hljs-string">&#x27;#title&#x27;</span>);</span>
-<span class="line"><span class="hljs-keyword">const</span> large = <span class="hljs-variable language_">document</span>.<span class="hljs-title function_">querySelector</span>(<span class="hljs-string">&#x27;#large&#x27;</span>);</span>
-<span class="line"><span class="hljs-keyword">const</span> <span class="hljs-title function_">render</span> = (<span class="hljs-params"></span>) =&gt; {</span>
-<span class="line">  title.<span class="hljs-property">textContent</span> = menu.<span class="hljs-property">drink</span></span>
-<span class="line">    ? <span class="hljs-string">`<span class="hljs-subst">${menu.size === <span class="hljs-string">&#x27;large&#x27;</span> ? <span class="hljs-string">&#x27;Large&#x27;</span> : <span class="hljs-string">&#x27;Regular&#x27;</span>}</span> <span class="hljs-subst">${menu.drinks[menu.drink]}</span>`</span></span>
-<span class="line">    : <span class="hljs-string">&#x27;Pick a drink&#x27;</span>;</span>
-<span class="line">  large.<span class="hljs-property">checked</span> = menu.<span class="hljs-property">size</span> === <span class="hljs-string">&#x27;large&#x27;</span>;</span>
-<span class="line">  large.<span class="hljs-property">disabled</span> = !menu.<span class="hljs-property">drink</span>;</span>
-<span class="line">};</span>
-<span class="line">large.<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;change&#x27;</span>, <span class="hljs-function">() =&gt;</span></span>
-<span class="line">  menu.<span class="hljs-title function_">setSize</span>(large.<span class="hljs-property">checked</span> ? <span class="hljs-string">&#x27;large&#x27;</span> : <span class="hljs-string">&#x27;regular&#x27;</span>),</span>
-<span class="line">);</span>
-<span class="line"><span class="hljs-title function_">observe</span>(menu, render);</span>
-<span class="line"><span class="hljs-title function_">render</span>();</span></code></pre>
-<p><code>document.addEventListener(&#39;click&#39;, router.go)</code> is all the link handling the page needs. A click on any same-origin <code>href</code> becomes a <code>pushState</code> and a call to <code>onRoute</code> instead of a page load. The links are still real links, so they work before the module has loaded and open in a new tab on Cmd-click. <code>router.go</code> leaves those clicks to the browser, along with links to other sites, <code>target</code> and <code>download</code> links, and same-page <code>#anchors</code>. It also finds links inside the shadow roots of custom elements.</p>
-<p>Links and the checkbox write the URL differently. A link is a destination: it pushes a history entry, and the store gets exactly that URL, so <code>/menu/latte</code> resets the size to regular. The checkbox calls an action, and <code>toURL</code> writes the new <code>?size=</code> with <code>replaceState</code> because of <code>replace: true</code>, so toggling the size doesn&#39;t add Back-button entries.</p>
-<h3 id="refresh-and-deep-links">Refresh and deep links</h3>
-<p>Reload <code>/menu/latte?size=large</code>, or open it from a bookmark, and the browser asks the server for that path. Once the page loads, <code>router.register</code> reads the current URL and calls <code>onRoute</code> with <code>{ path: &#39;/menu/latte&#39;, query: { size: &#39;large&#39; } }</code>, which puts the store back in the same state. Back and Forward work the same way, through <code>popstate</code>.</p>
-<p>That takes two things:</p>
-<ul>
-<li><strong>The server returns <code>index.html</code> for every app path.</strong> Locally, <code>npx web-dev-server --app-index index.html</code> does this. On nginx it&#39;s <code>try_files $uri /index.html;</code>, and most static hosts have an equivalent rewrite rule.</li>
-<li><strong>Asset URLs are root-absolute:</strong> <code>/app.js</code>, not <code>./app.js</code>. A page served at <code>/menu/latte</code> would resolve <code>./app.js</code> to <code>/menu/app.js</code>.</li>
-</ul>
-<p>GitHub Pages has no rewrite rule. There, keep page state in the query string or the hash (<code>/?drink=latte</code>), which needs nothing from the server.</p>
-<h3 id="several-stores-one-url">Several stores, one URL</h3>
-<p><code>createRouter()</code> takes no arguments, and there&#39;s no route table. Each store registers itself and decides which part of the URL it owns: the path, some query keys, some hash keys. After an action on any registered store, the router asks every store for its <code>toURL()</code> and builds one URL from all of them.</p>
-<p>As a result, a query key that no store returns is dropped on the next rebuild. If a parameter has to survive, give it an owner, and give each parameter only one.</p>
-<p>To change one store&#39;s part of the URL, call that store&#39;s action, as in <code>menu.setSize(&#39;large&#39;)</code>. <code>router.navigate(&#39;/menu/chai&#39;)</code> behaves like a link: it goes to exactly that URL, and every other store gets a route without its parameters.</p>
-<h3 id="history-entries">History entries</h3>
-<p>A store change pushes a history entry unless every store whose output changed returns <code>replace: true</code>. Search text and filters usually want to replace; moving between pages usually wants to push.</p>
-<p>Changes the router causes itself never push. If a store rewrites the URL it was just routed to, for example by filling in a default, the router replaces the current entry.</p>
-<p>A <code>before</code> guard can cancel <code>navigate</code> and <code>replace</code>. It can&#39;t cancel Back and Forward, because the browser has already moved by the time picosm hears about it. When a guard rejects one of those, the router pushes the previous URL back.</p>
-<p>To keep query values between visits, pass <code>storage</code> and <code>key</code> to <code>register</code>. See <a href="#persisting-store-state">persisting store state</a>.</p>
+<p>The <a href="#routing">router</a> puts store state in the URL, with plain links and deep links that survive a refresh. Lit components can use the same stores through <a href="#lit"><code>makeLitObserver</code></a>.</p>
 </div></section>
 <section aria-labelledby="routing"><div class="tab-bar" aria-hidden="true"><span class="tab">routing.md</span></div><div class="doc"><h2 id="routing">Router</h2>
 <p><code>createRouter</code> coordinates multiple stores with the browser History API. Each store registers itself and decides what part of the URL it owns. The router parses and serializes query/hash as objects — stores never touch strings.</p>
@@ -483,15 +381,27 @@
 <span class="line">router.<span class="hljs-title function_">destroy</span>();</span></code></pre>
 <p><code>navigate</code> and <code>replace</code> go to exactly the URL they are given, like a link would: other stores receive a route without their params. Paths may be relative and carry a query string and a hash, which <code>query</code> and <code>hash</code> options extend. Navigating to the current URL replaces the entry instead of adding a duplicate. To change one store&#39;s part of the URL and keep the rest, call the store&#39;s action instead: its <code>toURL</code> updates the URL.</p>
 <h3 id="event-delegation">Event delegation</h3>
-<p><code>router.go</code> is a bound click handler for any element with <code>href</code>. One handler on a parent, works for all links via event delegation:</p>
-<pre class="language-javascript"><code><span class="line">html`<span class="language-xml"></span></span>
-<span class="line"><span class="language-xml">  <span class="hljs-tag">&lt;<span class="hljs-name">nav</span> @<span class="hljs-attr">click</span>=</span></span><span class="hljs-subst">${router.go}</span><span class="language-xml"><span class="hljs-tag">&gt;</span></span></span>
-<span class="line"><span class="language-xml">    <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;/&quot;</span>&gt;</span>Home<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span></span>
-<span class="line"><span class="language-xml">    <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;/users&quot;</span>&gt;</span>Users<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span></span>
-<span class="line"><span class="language-xml">    <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;https://external.com&quot;</span>&gt;</span>External<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span></span>
-<span class="line"><span class="language-xml">  <span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span></span></span>
-<span class="line"><span class="language-xml">`</span></span></code></pre>
+<p><code>router.go</code> is a bound click handler for any element with <code>href</code>. Put it on the element that holds your links, and it handles all of them through event delegation:</p>
+<pre class="language-html"><code><span class="line"><span class="hljs-tag">&lt;<span class="hljs-name">nav</span>&gt;</span></span>
+<span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;/&quot;</span>&gt;</span>Home<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span>
+<span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;/users/42?tab=posts&quot;</span>&gt;</span>Posts<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span>
+<span class="line">  <span class="hljs-tag">&lt;<span class="hljs-name">a</span> <span class="hljs-attr">href</span>=<span class="hljs-string">&quot;https://external.com&quot;</span>&gt;</span>External<span class="hljs-tag">&lt;/<span class="hljs-name">a</span>&gt;</span></span>
+<span class="line"><span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span></span></code></pre>
+<pre class="language-javascript"><code><span class="line"><span class="hljs-comment">// Plain DOM</span></span>
+<span class="line"><span class="hljs-variable language_">document</span>.<span class="hljs-title function_">querySelector</span>(<span class="hljs-string">&#x27;nav&#x27;</span>).<span class="hljs-title function_">addEventListener</span>(<span class="hljs-string">&#x27;click&#x27;</span>, router.<span class="hljs-property">go</span>);</span>
+<span class="line"></span>
+<span class="line"><span class="hljs-comment">// Lit</span></span>
+<span class="line">html`<span class="language-xml"><span class="hljs-tag">&lt;<span class="hljs-name">nav</span> @<span class="hljs-attr">click</span>=</span></span><span class="hljs-subst">${router.go}</span><span class="language-xml"><span class="hljs-tag">&gt;</span>...<span class="hljs-tag">&lt;/<span class="hljs-name">nav</span>&gt;</span>`</span>;</span></code></pre>
+<p>A handled click becomes a <code>pushState</code> and a call to each store&#39;s <code>onRoute</code>, without a page load. The links stay plain links, so they work before your module loads and open in a new tab on Cmd-click.</p>
 <p>Reads <code>href</code> from any element — <code>&lt;a&gt;</code>, <code>&lt;sp-button href=&quot;...&quot;&gt;</code> or any custom element — including links inside the shadow roots of nested components. Relative hrefs resolve like the browser resolves them. Left to the browser: links to other origins, clicks with a modifier key or another mouse button, links with a <code>target</code> other than <code>_self</code> or a <code>download</code> attribute, clicks a handler already called <code>preventDefault()</code> on, and same-page <code>#anchor</code> links.</p>
+<h3 id="refresh-and-deep-links">Refresh and deep links</h3>
+<p>Reload <code>/users/42?tab=posts</code>, or open it from a bookmark, and the browser asks the server for that path. When the page loads, <code>register</code> reads the current URL and calls <code>onRoute</code> with it, so each store comes back in the state the URL describes. Back and Forward go through <code>onRoute</code> too.</p>
+<p>That needs two things:</p>
+<ul>
+<li>The server returns your <code>index.html</code> for every app path. Locally, <code>npx web-dev-server --app-index index.html</code> does this; on nginx it&#39;s <code>try_files $uri /index.html;</code>.</li>
+<li>Asset URLs are root-absolute, as in <code>/app.js</code> rather than <code>./app.js</code>: a page served at <code>/users/42</code> would resolve <code>./app.js</code> to <code>/users/app.js</code>.</li>
+</ul>
+<p>GitHub Pages has no rewrite rule, so keep page state in the query string or the hash there (<code>/?user=42</code>), which needs nothing from the server.</p>
 <h3 id="navigation-guards">Navigation guards</h3>
 <p>Stores can register a <code>before</code> hook to block navigation when state is dirty. Guards support async — use a custom modal instead of <code>confirm()</code>:</p>
 <pre class="language-javascript"><code><span class="line">router.<span class="hljs-title function_">register</span>(formStore, {</span>
@@ -512,7 +422,6 @@
 <span class="line">  <span class="hljs-attr">storage</span>: <span class="hljs-variable language_">sessionStorage</span>,  <span class="hljs-comment">// survives page refresh; use localStorage to survive browser restart</span></span>
 <span class="line">  <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;filters&#x27;</span>,</span>
 <span class="line">});</span></code></pre>
-<p>For a worked example, see <a href="#history-routing">routing with the History API</a>.</p>
 </div></section></main>
   </div>
   <footer class="status-bar">

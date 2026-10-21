@@ -77,19 +77,37 @@ router.destroy();
 
 ## Event delegation
 
-`router.go` is a bound click handler for any element with `href`. One handler on a parent, works for all links via event delegation:
+`router.go` is a bound click handler for any element with `href`. Put it on the element that holds your links, and it handles all of them through event delegation:
 
-```javascript
-html`
-  <nav @click=${router.go}>
-    <a href="/">Home</a>
-    <a href="/users">Users</a>
-    <a href="https://external.com">External</a>
-  </nav>
-`
+```html
+<nav>
+  <a href="/">Home</a>
+  <a href="/users/42?tab=posts">Posts</a>
+  <a href="https://external.com">External</a>
+</nav>
 ```
 
+```javascript
+// Plain DOM
+document.querySelector('nav').addEventListener('click', router.go);
+
+// Lit
+html`<nav @click=${router.go}>...</nav>`;
+```
+
+A handled click becomes a `pushState` and a call to each store's `onRoute`, without a page load. The links stay plain links, so they work before your module loads and open in a new tab on Cmd-click.
+
 Reads `href` from any element — `<a>`, `<sp-button href="...">` or any custom element — including links inside the shadow roots of nested components. Relative hrefs resolve like the browser resolves them. Left to the browser: links to other origins, clicks with a modifier key or another mouse button, links with a `target` other than `_self` or a `download` attribute, clicks a handler already called `preventDefault()` on, and same-page `#anchor` links.
+
+## Refresh and deep links
+
+Reload `/users/42?tab=posts`, or open it from a bookmark, and the browser asks the server for that path. When the page loads, `register` reads the current URL and calls `onRoute` with it, so each store comes back in the state the URL describes. Back and Forward go through `onRoute` too.
+
+That needs two things:
+- The server returns your `index.html` for every app path. Locally, `npx web-dev-server --app-index index.html` does this; on nginx it's `try_files $uri /index.html;`.
+- Asset URLs are root-absolute, as in `/app.js` rather than `./app.js`: a page served at `/users/42` would resolve `./app.js` to `/users/app.js`.
+
+GitHub Pages has no rewrite rule, so keep page state in the query string or the hash there (`/?user=42`), which needs nothing from the server.
 
 ## Navigation guards
 
@@ -121,5 +139,3 @@ router.register(filterStore, {
   key: 'filters',
 });
 ```
-
-For a worked example, see [routing with the History API](history-routing.md).
