@@ -31,7 +31,7 @@ It doesn't track field writes. Only listed actions notify, so `store.value = 5` 
 - **Lit integration** — `makeLitObserver` wires observable properties to `requestUpdate` automatically
 - **Store-driven routing** — `createRouter` syncs multiple stores with the browser History API, with optional sessionStorage/localStorage persistence
 - **Descriptive errors** — misconfigured classes, non-observable targets and notification cycles throw errors that say what to fix
-- **Tree-shakeable** — import only what you need from individual modules
+- **Tree-shakeable** — import only what you need from individual modules under `picosm/src/`
 
 ## Live tour
 
@@ -113,7 +113,7 @@ Notifications are batched via microtask: multiple synchronous actions on the sam
 
 ### `reaction(target, selector, effect, timeout?)`
 
-Runs `selector(target)` once to record the starting values, then after each action. When the returned array differs element-wise (compared with `Object.is`) from the previous result, calls `effect(...values)`. Return an empty array from `selector` to skip execution.
+Runs `selector(target)` once to record the starting values, then after each action. When the returned array differs element-wise (compared with `Object.is`) from the previous result, calls `effect(...values)`. Return an empty array from `selector` to skip execution. Pass `timeout` in milliseconds to throttle it like `observe`: the selector and effect run at most once per window, and a trailing run picks up the latest values.
 
 Returns a **disposer** function.
 

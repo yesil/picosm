@@ -39,7 +39,7 @@ Notifications are batched via microtask: multiple synchronous actions on the sam
 
 ## `reaction(target, selector, effect, timeout?)`
 
-Runs `selector(target)` once to record the starting values, then after each action. When the returned array differs element-wise (compared with `Object.is`) from the previous result, calls `effect(...values)`. Return an empty array from `selector` to skip execution.
+Runs `selector(target)` once to record the starting values, then after each action. When the returned array differs element-wise (compared with `Object.is`) from the previous result, calls `effect(...values)`. Return an empty array from `selector` to skip execution. Pass `timeout` in milliseconds to throttle it like `observe`: the selector and effect run at most once per window, and a trailing run picks up the latest values.
 
 Returns a **disposer** function.
 

@@ -19,13 +19,19 @@ To react only when particular values change, use [`reaction`](api.md#reactiontar
 
 ## Updates are batched
 
-Actions run straight away. Subscribers run once, in a microtask, after the current code finishes, so two actions in one click render once. An async action notifies when its Promise settles, which means a loading flag has to be set by a separate synchronous action. See [async actions](api.md#async-actions).
+Actions run straight away. Subscribers run once, in a microtask, after the current code finishes, so two actions in one click render once. An async action notifies when its Promise settles, which means a loading flag has to be set by a separate synchronous action. See [async actions](api.md#async-actions). An action that throws notifies too, after clearing cached getters, so state it changed before the error isn't left stale, and the error still reaches the caller.
 
 ## Without a bundler
 
 The browser resolves `picosm` through the import map, so pin the version in the URL. If you install from npm and serve `node_modules`, point the map at `node_modules/picosm/dist/picosm.js` instead. The router is in the same file: map `picosm/router` to it as well, or import `createRouter` from `picosm`.
 
 Browsers won't load module files from `file://` URLs, so serve the folder over HTTP, even locally.
+
+To load only part of the library, import its modules one by one from `picosm/src/`: `makeObservable.js` (which also exports `observe`, `subscribe` and `notify`), `reaction.js`, `track.js`, `makeLitObserver.js` and `router.js`. Map the prefix once in the import map, as in `"picosm/src/": "https://cdn.jsdelivr.net/npm/picosm@3.0.0/src/"`. These paths have no type declarations.
+
+This setup works in Chrome 93, Firefox 108 and Safari 16.4 or later, the first versions with both import maps and every built-in picosm uses.
+
+When you install from npm, `picosm` and `picosm/router` come with TypeScript declarations, so editors complete and check the API in TypeScript files and in JavaScript files with `// @ts-check`.
 
 ## The trade-off
 
