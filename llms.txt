@@ -1,0 +1,23 @@
+# picosm
+
+> State management for web apps written in plain HTML and JavaScript modules, with no bundler: observable classes with explicit actions, cached getters and batched notifications, and no dependencies. Documentation for version 3.0.0.
+
+Only methods listed in `observableActions` notify subscribers and clear cached getters; assigning a field does neither. Notifications are delivered in a microtask, and async actions notify after their Promise settles. Every subscription returns a disposer.
+
+## Documentation
+
+- [Documentation](https://yesil.github.io/picosm/): every section below on one page.
+- [How it works](https://yesil.github.io/picosm/docs/how-it-works.md): Stores, subscriptions, batching and loading picosm without a bundler, and what the explicit-action model costs.
+- [API reference](https://yesil.github.io/picosm/docs/api.md): makeObservable, observe, reaction, track, subscribe/notify and async actions.
+- [Lit](https://yesil.github.io/picosm/docs/lit.md): Using stores from Lit components with makeLitObserver.
+- [As the app grows](https://yesil.github.io/picosm/docs/growing.md): The same app split into modules the browser loads directly, and stores connected with track.
+- [Routing with the History API](https://yesil.github.io/picosm/docs/history-routing.md): Plain links handled by router.go, path and query owned by one store, and deep links that survive a refresh.
+- [Router](https://yesil.github.io/picosm/docs/routing.md): createRouter and register: URL ownership, history, navigation, guards and storage.
+- [Coding assistant guide](https://yesil.github.io/picosm/docs/assistant-guide.md): Rules and a complete example for writing picosm code.
+
+## Project
+
+- [npm](https://www.npmjs.com/package/picosm): Published package and releases.
+- [GitHub](https://github.com/yesil/picosm): Source, issues and license.
+- [Runnable example](https://yesil.github.io/picosm/docs/example/): The single-file cart app from the top of the documentation.
+- [Live tour](https://yesil.github.io/picosm/examples/): Every feature, running against the repository source.

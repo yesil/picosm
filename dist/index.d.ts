@@ -90,7 +90,7 @@ export function track(target: object, source: object): Disposer;
 
 /**
  * Enhances a LitElement class to automatically observe properties declared with `observe: true`,
- * including inherited and decorator-declared ones.
+ * including inherited ones.
  * Supports `throttle` option on property config. Re-binds when property values change.
  * @param constructor - A LitElement class
  * @returns The same constructor (for chaining)
