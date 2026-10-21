@@ -25,7 +25,7 @@ The docs site is a single page, `index.html`, built by `scripts/build-docs.js`. 
 
 The API, Lit and Router sections are cut out of `README.md` by heading, so edit that reference in the README, and keep its `## API`, `## Async actions`, `## Router` and `## Contributing` headings where they are. The runnable `docs/example/index.html` is generated from the `file=index.html` code block in `docs/index.md`, so the app shown at the top of the docs and the one you can run can't drift apart. It loads picosm from a pinned CDN URL, which needs bumping by hand for a new release.
 
-Commit the generated files along with their sources. GitHub Pages serves the branch as is: nothing is built on the server, and `.nojekyll` stops Jekyll from processing it. Promotion drafts live in `PROMOTION.md`.
+Commit the generated files along with their sources. GitHub Pages serves the branch as is: nothing is built on the server, and `.nojekyll` stops Jekyll from processing it.
 
 ## Testing model
 
