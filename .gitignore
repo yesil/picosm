@@ -35,3 +35,8 @@ typings/
 meta.json
 
 *.tgz
+
+# Local tooling and private launch notes
+.claude/
+.scout/
+PROMOTION.md
