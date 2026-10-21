@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#14211c"/>
+
+  <rect width="1200" height="56" fill="#0f1915"/>
+  <rect y="55" width="1200" height="1" fill="#24362e"/>
+  <rect width="220" height="56" fill="#14211c"/>
+  <rect width="220" height="3" fill="#e2b54f"/>
+  <rect x="220" width="1" height="56" fill="#24362e"/>
+  <g font-family="Menlo, 'SF Mono', monospace">
+    <text x="28" y="35" fill="#7fb3d5" font-size="13" font-weight="700">M↓</text>
+    <text x="62" y="35" fill="#eef3ea" font-size="19">index.md</text>
+  </g>
+
+  <g font-family="Menlo, 'SF Mono', monospace">
+    <text x="72" y="196" fill="#eef3ea" font-size="78" font-weight="700" letter-spacing="-3">picosm</text>
+    <text x="72" y="276" fill="#eef3ea" font-size="38" font-weight="600" letter-spacing="-1">State management</text>
+    <text x="72" y="324" fill="#eef3ea" font-size="38" font-weight="600" letter-spacing="-1">without a bundler.</text>
+  </g>
+  <g font-family="'Helvetica Neue', Helvetica, Arial, sans-serif" font-size="24" fill="#8b9c91">
+    <text x="72" y="396">Plain HTML, JavaScript modules</text>
+    <text x="72" y="430">and observable classes.</text>
+    <text x="72" y="464">No build step, no dependencies.</text>
+  </g>
+
+  <path d="M632 112a8 8 0 0 1 8-8h112v32h-120z" fill="#0f1915"/>
+  <path d="M632 112a8 8 0 0 1 8-8h112v32" fill="none" stroke="#24362e"/>
+  <text x="652" y="126" fill="#eef3ea" font-family="Menlo, 'SF Mono', monospace" font-size="15">index.html</text>
+  <rect x="632" y="136" width="508" height="408" rx="10" fill="#0f1915" stroke="#24362e"/>
+  <rect x="633" y="136" width="119" height="2" fill="#0f1915"/>
+
+  <g font-family="Menlo, 'SF Mono', monospace" font-size="17" xml:space="preserve">
+    <g fill="#4a6156" text-anchor="end">
+      <text x="676" y="180">1</text>
+      <text x="676" y="210">2</text>
+      <text x="676" y="240">3</text>
+      <text x="676" y="270">4</text>
+      <text x="676" y="300">5</text>
+      <text x="676" y="330">6</text>
+      <text x="676" y="360">7</text>
+      <text x="676" y="390">8</text>
+      <text x="676" y="420">9</text>
+      <text x="676" y="450">10</text>
+      <text x="676" y="480">11</text>
+      <text x="676" y="510">12</text>
+    </g>
+    <g fill="#d6dfd4">
+      <text x="692" y="180"><tspan fill="#8b9c91">&lt;</tspan><tspan fill="#ef9f86">script</tspan> <tspan fill="#c8a8ec">type</tspan><tspan fill="#8b9c91">=</tspan><tspan fill="#b5d98c">"importmap"</tspan><tspan fill="#8b9c91">&gt;</tspan></text>
+      <text x="692" y="210">  { <tspan fill="#b5d98c">"imports"</tspan>: { <tspan fill="#b5d98c">"picosm"</tspan>: <tspan fill="#b5d98c">"…"</tspan> } }</text>
+      <text x="692" y="240"><tspan fill="#8b9c91">&lt;/</tspan><tspan fill="#ef9f86">script</tspan><tspan fill="#8b9c91">&gt;</tspan></text>
+      <text x="692" y="270"><tspan fill="#8b9c91">&lt;</tspan><tspan fill="#ef9f86">script</tspan> <tspan fill="#c8a8ec">type</tspan><tspan fill="#8b9c91">=</tspan><tspan fill="#b5d98c">"module"</tspan><tspan fill="#8b9c91">&gt;</tspan></text>
+      <text x="692" y="300">  <tspan fill="#ef9f86">import</tspan> { makeObservable } <tspan fill="#ef9f86">from</tspan> <tspan fill="#b5d98c">'picosm'</tspan>;</text>
+      <text x="692" y="360">  <tspan fill="#ef9f86">class</tspan> <tspan fill="#8fc7ea">Cart</tspan> {</text>
+      <text x="692" y="390">    <tspan fill="#ef9f86">static</tspan> observableActions = [<tspan fill="#b5d98c">'add'</tspan>];</text>
+      <text x="692" y="420">    items = [];</text>
+      <text x="692" y="450">    <tspan fill="#8fc7ea">add</tspan>(item) { <tspan fill="#ef9f86" font-style="italic">this</tspan>.<tspan fill="#c8a8ec">items</tspan>.<tspan fill="#8fc7ea">push</tspan>(item); }</text>
+      <text x="692" y="480">  }</text>
+      <text x="692" y="510"><tspan fill="#8b9c91">&lt;/</tspan><tspan fill="#ef9f86">script</tspan><tspan fill="#8b9c91">&gt;</tspan></text>
+    </g>
+  </g>
+
+  <rect y="590" width="1200" height="40" fill="#e2b54f"/>
+  <g font-family="Menlo, 'SF Mono', monospace" font-size="17" fill="#14211c">
+    <text x="28" y="616">npm install picosm</text>
+    <text x="1172" y="616" text-anchor="end">yesil.github.io/picosm</text>
+  </g>
+</svg>

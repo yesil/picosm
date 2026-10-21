@@ -7,13 +7,19 @@
 [![license](https://img.shields.io/npm/l/picosm.svg)](LICENSE)
 [![CI](https://github.com/yesil/picosm/actions/workflows/ci.yml/badge.svg)](https://github.com/yesil/picosm/actions/workflows/ci.yml)
 
-Lightweight, zero-dependency state manager for observable classes using explicit action declarations, computed getter caching, and batched notifications.
+State management for web apps written in plain HTML and JavaScript modules, with no bundler and no build step. You list the methods that change state, and picosm notifies subscribers after they run, caches the getters you name, and batches updates. No dependencies. Works with plain DOM code, Web Components and Lit.
 
 ```bash
 npm install picosm
 ```
 
-Available on [npm](https://www.npmjs.com/package/picosm).
+Available on [npm](https://www.npmjs.com/package/picosm). Documentation: [yesil.github.io/picosm](https://yesil.github.io/picosm/).
+
+## When to use picosm
+
+picosm is made for apps the browser loads directly: HTML, an import map and JavaScript modules, with no bundler. It works the same in a bundled app. It fits when your state lives in classes and more than one view needs it. DOM code subscribes with `observe`, custom elements subscribe in `connectedCallback` and dispose in `disconnectedCallback`, and `makeLitObserver` does both for Lit components. The store is the same in every case.
+
+It doesn't track field writes. Only listed actions notify, so `store.value = 5` goes unnoticed, and an async action notifies once its Promise settles. There's no state history or devtools panel.
 
 ## Features
 
@@ -58,6 +64,7 @@ const counter = new Counter();
 const disposer = observe(counter, () => console.log('changed:', counter.value));
 
 counter.increment(); // logs: "changed: 1"
+await new Promise(queueMicrotask);
 disposer();          // stops observing
 ```
 
@@ -119,6 +126,7 @@ const disposer = reaction(
   (value) => console.log('Value changed to', value),
 );
 counter.increment(); // logs: "Value changed to 1"
+await new Promise(queueMicrotask);
 disposer();
 ```
 
@@ -151,11 +159,13 @@ const child = new Counter();
 
 const untrack = track(parent, child);
 
-observe(parent, () => {
+const stopObserving = observe(parent, () => {
   console.log('child changed, parent notified');
 });
 
 child.increment(); // triggers both child and parent observers
+await new Promise(queueMicrotask);
+stopObserving();
 untrack();
 ```
 
@@ -196,7 +206,7 @@ class MyView extends LitElement {
 customElements.define('my-view', makeLitObserver(MyView));
 ```
 
-When a new object is assigned to an observed property, the old observer is disposed and a new one is bound automatically. Inherited properties and properties declared with the `@property({ observe: true })` decorator are observed too. Assigning a value that is not an observable instance to such a property throws.
+When a new object is assigned to an observed property, the old observer is disposed and a new one is bound automatically. Inherited properties are observed too. Assigning a value that is not an observable instance to such a property throws.
 
 ## Async actions
 
@@ -349,6 +359,9 @@ Contributions are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for dev setup,
 ## Links
 
 - [npm package](https://www.npmjs.com/package/picosm)
+- [Documentation](https://yesil.github.io/picosm/)
+- [How it works](https://yesil.github.io/picosm/#how-it-works)
+- [Assistant usage guide](https://yesil.github.io/picosm/docs/assistant-guide.md)
 - [GitHub repository](https://github.com/yesil/picosm)
 - [Live tour](https://yesil.github.io/picosm/examples/)
 - [Issue tracker](https://github.com/yesil/picosm/issues)

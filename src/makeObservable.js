@@ -174,7 +174,7 @@ const observableMethods = {
 };
 
 /**
- * Decorator function that makes a class observable by adding reactive capabilities.
+ * Makes a class observable by adding reactive capabilities. Call it once, after the class declaration.
  * Supports action methods, computed properties, and observer/subscriber patterns.
  * Subclasses of an observable class can be passed too, to instrument their own declarations.
  * @param {Function} constructor - The class constructor to make observable
