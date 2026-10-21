@@ -16,6 +16,16 @@ npm install
 | `npm run lint` | Lint `src` and `test` (eslint + prettier) |
 | `npm run dev` | Serve the live tour (`examples/`) |
 | `npm run build` | Bundle `src/` into `dist/` with esbuild |
+| `npm run docs:build` | Build the documentation page, the example page, `llms.txt` and `sitemap.xml` |
+| `npm run docs:dev` | Build the docs and serve them locally |
+
+## Documentation
+
+The docs site is a single page, `index.html`, built by `scripts/build-docs.js`. `docs/index.md` is the introduction, and every other Markdown file in `docs/` becomes a section, in the order the script lists them. Link between sections by file name (`routing.md#navigation`): the build turns those links into anchors and fails on any anchor that doesn't exist.
+
+The API, Lit and Router sections are cut out of `README.md` by heading, so edit that reference in the README, and keep its `## API`, `## Async actions`, `## Router` and `## Contributing` headings where they are. The runnable `docs/example/index.html` is generated from the `file=index.html` code block in `docs/index.md`, so the app shown at the top of the docs and the one you can run can't drift apart. It loads picosm from a pinned CDN URL, which needs bumping by hand for a new release.
+
+Commit the generated files along with their sources. GitHub Pages serves the branch as is: nothing is built on the server, and `.nojekyll` stops Jekyll from processing it. Promotion drafts live in `PROMOTION.md`.
 
 ## Testing model
 

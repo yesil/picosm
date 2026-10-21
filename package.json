@@ -23,6 +23,8 @@
     "test:watch": "web-test-runner test/**/*.test.js --node-resolve --watch",
     "dev": "npx @web/dev-server -c web-dev-server.config.js",
     "build": "npx esbuild src/index.js --bundle --outfile=dist/picosm.js --format=esm --minify --metafile=meta.json",
+    "docs:build": "node scripts/build-docs.js",
+    "docs:dev": "npm run docs:build && web-dev-server --open /",
     "prepublishOnly": "npm test && npm run build"
   },
   "type": "module",
@@ -40,16 +42,18 @@
     "reactive",
     "lit",
     "web-components",
+    "vanilla-javascript",
+    "state-manager",
     "lightweight"
   ],
   "author": "Ilyas Stéphne Türkben",
   "license": "ISC",
-  "description": "Lightweight state manager that makes arbitrary classes observable",
+  "description": "Lightweight, zero-dependency state management for vanilla JavaScript and Web Components, with optional Lit integration",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/yesil/picosm.git"
   },
-  "homepage": "https://github.com/yesil/picosm#readme",
+  "homepage": "https://yesil.github.io/picosm/",
   "bugs": {
     "url": "https://github.com/yesil/picosm/issues"
   },
@@ -60,8 +64,10 @@
     "eslint": "^9.5.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
+    "highlight.js": "^11.12.0",
     "husky": "^9.0.11",
     "lit": "^2.8.0",
+    "marked": "^18.1.1",
     "prettier": "^3.3.2",
     "sinon": "^15.2.0"
   }
