@@ -43,6 +43,12 @@ const sections = [
     description:
       'createRouter and register: URL ownership, history, links with router.go, deep links that survive a refresh, guards and storage.',
   },
+  {
+    slug: 'tracing',
+    nav: 'Tracing',
+    description:
+      'startTrace and stopTrace: recording actions, notifications, Lit updates and router steps as a Chrome trace.',
+  },
 ];
 
 const escape = (text) =>
@@ -81,7 +87,8 @@ const litDetails = section(
   '### `makeLitObserver(constructor)`\n',
   '## Async actions\n',
 );
-const router = section('## Router\n', '## Contributing\n');
+const router = section('## Router\n', '## Performance tracing\n');
+const tracing = section('## Performance tracing\n', '## Contributing\n');
 await writeFile(
   new URL('docs/api.md', root),
   `# API reference\n\n${promote(api)}\n\n## Async actions\n\n${asyncActions}\n`,
@@ -93,6 +100,10 @@ await writeFile(
 await writeFile(
   new URL('docs/routing.md', root),
   `# Router\n\n${promote(router)}\n`,
+);
+await writeFile(
+  new URL('docs/tracing.md', root),
+  `# Performance tracing\n\n${promote(tracing)}\n`,
 );
 
 // The app shown at the top of the docs is also published as a runnable page, from the same code block

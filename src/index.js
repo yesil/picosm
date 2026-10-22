@@ -3,3 +3,4 @@ export * from './reaction.js';
 export * from './track.js';
 export * from './makeLitObserver.js';
 export * from './router.js';
+export { startTrace, stopTrace } from './trace.js';
