@@ -44,7 +44,7 @@ change; CI runs lint, tests, and the build on every pull request.
 - `src/track.js` — forward notifications between observables
 - `src/makeLitObserver.js` — LitElement integration via reactive controller
 - `src/router.js` — store-driven URL routing via the History API (`picosm/router`)
-- `src/trace.js` — opt-in performance tracing (`startTrace`, `stopTrace`)
+- `src/trace.js` — opt-in tracing of Lit view updates (`startTrace`, `stopTrace`)
 - `src/index.js` — barrel export (includes router)
 - `src/internal.js` — shared helpers, not exported from the barrel
 - `test/` — browser tests (web-test-runner)

@@ -47,7 +47,7 @@ const sections = [
     slug: 'tracing',
     nav: 'Tracing',
     description:
-      'startTrace and stopTrace: recording actions, notifications, Lit updates and router steps as a Chrome trace.',
+      'startTrace and stopTrace: recording which store changes make Lit views update, and what each update cost.',
   },
 ];
 

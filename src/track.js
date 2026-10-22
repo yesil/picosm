@@ -1,6 +1,5 @@
 import { observe } from './makeObservable.js';
 import { assertObservable } from './internal.js';
-import { beginCause, endTrack } from './trace.js';
 
 // source -> Map(target -> number of active track() calls): the direction notifications flow
 const forwards = new WeakMap();
@@ -28,10 +27,8 @@ export function track(target, source) {
   }
 
   const stopObserving = observe(source, () => {
-    const span = beginCause();
     target.__resetComputedProperties();
     target.__notifyObservers();
-    if (span !== null) endTrack(span, source, target);
   });
   const targets = forwards.get(source) ?? new Map();
   forwards.set(source, targets);

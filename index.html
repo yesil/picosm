@@ -358,7 +358,7 @@
 <span class="line">});</span></code></pre>
 </div></section>
 <section aria-labelledby="tracing"><div class="tab-bar" aria-hidden="true"><span class="tab">tracing.md</span></div><div class="doc"><h2 id="tracing">Performance tracing</h2>
-<p><code>startTrace()</code> records what picosm does until <code>stopTrace()</code> returns the trace: actions, notifications, computed values, <code>track()</code> forwards, reactions, messages, Lit updates and router steps. The trace uses the Chrome trace event format, so <a href="https://ui.perfetto.dev">Perfetto</a> and the Chrome DevTools Performance panel open it as a JSON file.</p>
+<p><code>startTrace()</code> records which store changes ask Lit views to update, and what each update cost, until <code>stopTrace()</code> returns the trace. It covers views made with <code>makeLitObserver</code>. The trace uses the Chrome trace event format, so <a href="https://ui.perfetto.dev">Perfetto</a> and the Chrome DevTools Performance panel open it as a JSON file.</p>
 <pre class="language-javascript"><code><span class="line"><span class="hljs-keyword">import</span> { startTrace, stopTrace } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;picosm&#x27;</span>;</span>
 <span class="line"></span>
 <span class="line"><span class="hljs-title function_">startTrace</span>();</span>
@@ -375,59 +375,19 @@
 </tr>
 </thead>
 <tbody><tr>
-<td><code>action</code></td>
-<td><code>Cart.addItem</code></td>
-<td><code>instance</code> (<code>Cart#1</code>) and <code>outcome</code>: <code>returned</code>, <code>threw</code>, or <code>pending</code> for an action that returned a Promise</td>
-</tr>
-<tr>
-<td><code>action-settled</code></td>
-<td><code>Cart.checkout settled</code></td>
-<td>When an async action&#39;s Promise settled: <code>action</code> (the action&#39;s id) and <code>outcome</code>, <code>resolved</code> or <code>rejected</code>. An async span named after the action covers the wait.</td>
-</tr>
-<tr>
-<td><code>notification</code></td>
-<td><code>Cart notification</code></td>
-<td><code>observers</code>, and <code>causes</code>: the ids of the actions and forwards whose changes it delivers</td>
-</tr>
-<tr>
-<td><code>computed</code></td>
-<td><code>Cart.total computed</code></td>
-<td>A recomputed getter. Reads from the cache are counted in <code>otherData.computedHits</code>, by <code>Class.getter</code>.</td>
-</tr>
-<tr>
-<td><code>track</code></td>
-<td><code>track Cart → Summary</code></td>
-<td><code>source</code>, <code>target</code>, and the <code>notification</code> being forwarded</td>
-</tr>
-<tr>
-<td><code>reaction</code></td>
-<td><code>reaction showBadge</code></td>
-<td><code>targets</code>, <code>selector</code>, <code>effect</code>, the <code>notification</code> that ran it, and <code>result</code>: <code>changed</code>, <code>unchanged</code>, or <code>skipped</code> when the selector returned <code>[]</code></td>
-</tr>
-<tr>
-<td><code>message</code></td>
-<td><code>Cart message</code></td>
-<td><code>subscribers</code></td>
-</tr>
-<tr>
 <td><code>view-request</code></td>
 <td><code>&lt;cart-view&gt; update requested</code></td>
-<td>A store change asking a Lit view to update: <code>store</code>, <code>property</code>, <code>throttleMs</code>, and the <code>notification</code>, which is <code>null</code> when a throttled observer calls later</td>
+<td>An observed store changed and the view called <code>requestUpdate</code>: <code>view</code>, <code>property</code>, <code>store</code> (<code>Cart#1</code>, numbering instances of a class in order of appearance) and <code>throttleMs</code>, 0 for a property without <code>throttle</code></td>
 </tr>
 <tr>
 <td><code>view-update</code></td>
 <td><code>&lt;cart-view&gt; update</code></td>
-<td><code>firstUpdate</code>, <code>domMutations</code> in the render root, and <code>causes</code>: the ids of the update requests it answers, empty when a property change caused it. An update with no DOM mutations re-rendered without changing anything.</td>
-</tr>
-<tr>
-<td><code>router</code></td>
-<td><code>router write</code>, <code>router onRoute</code>, <code>router sync</code>, <code>router register</code></td>
-<td><code>step</code> and its details: <code>mode</code> (<code>push</code> or <code>replace</code>), <code>trigger</code>, <code>outcome</code> or <code>store</code>. Navigation guards get an async <code>router guards</code> span with their <code>outcome</code>.</td>
+<td>Lit&#39;s render and DOM commit: <code>firstUpdate</code>, <code>domMutations</code> in the render root, and <code>causes</code>, the ids of the requests it answers, empty when a property change caused it. An update with no DOM mutations rendered without changing anything.</td>
 </tr>
 </tbody></table>
-<p>A trace holds names, counts and timings only, never action arguments, return values, messages, store state or URLs. Names come from <code>constructor.name</code> and from the names of your selector and effect functions, so trace a build that keeps them: a minifier that renames classes renames them in the trace too.</p>
+<p>A trace holds names, counts and timings only, never store values. Store names come from <code>constructor.name</code>, so trace a build that keeps class names: a minifier that renames classes renames them in the trace too.</p>
 <p><code>startTrace()</code> adds a <code>picosm trace start</code> performance mark, and <code>otherData.startTime</code> is that mark&#39;s <code>startTime</code>. Event times (<code>ts</code>, <code>dur</code>) are microseconds on the <code>performance.now()</code> clock, so you can line the trace up with a browser trace recorded at the same time. Browsers round <code>performance.now()</code>, so a short span can show a duration of 0.</p>
-<p>While no trace is recording, each instrumented step only checks whether one is. While recording, every Lit update observes its render root with a <code>MutationObserver</code> to count its DOM mutations. <code>startTrace({ maxEvents })</code> limits the recorded events, 100,000 by default, and <code>otherData.droppedEventCount</code> counts the events past the limit. <code>startTrace()</code> throws while a trace is recording, and <code>stopTrace()</code> throws when none is.</p>
+<p>While no trace is recording, a view only checks whether one is. While recording, every update observes its render root with a <code>MutationObserver</code> to count its DOM mutations. <code>startTrace({ maxEvents })</code> limits the recorded events, 100,000 by default, and <code>otherData.droppedEventCount</code> counts the events past the limit. <code>startTrace()</code> throws while a trace is recording, and <code>stopTrace()</code> throws when none is.</p>
 </div></section></main>
   </div>
   <footer class="status-bar">

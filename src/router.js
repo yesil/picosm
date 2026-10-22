@@ -1,12 +1,5 @@
 import { observe } from './makeObservable.js';
 import { assertObservable } from './internal.js';
-import {
-  beginAsync,
-  beginSpan,
-  endAsync,
-  endRouterRegister,
-  endRouterStep,
-} from './trace.js';
 
 function parseParams(str) {
   return Object.fromEntries(new URLSearchParams(str));
@@ -159,27 +152,15 @@ export function createRouter() {
   }
 
   async function checkGuards(destination) {
-    const span = beginAsync('router guards');
-    let outcome = 'threw';
-    try {
-      for (const reg of [...registrations]) {
-        if (reg.disposed || !reg.options.before) continue;
-        const allowed = await reg.options.before(destination);
-        if (!allowed) {
-          outcome = 'rejected';
-          return false;
-        }
-      }
-      outcome = 'allowed';
-      return true;
-    } finally {
-      if (span !== null) endAsync(span, { outcome });
+    for (const reg of [...registrations]) {
+      if (reg.disposed || !reg.options.before) continue;
+      const allowed = await reg.options.before(destination);
+      if (!allowed) return false;
     }
+    return true;
   }
 
-  // trigger names what delivers the route: navigate, replace or popstate
-  function notifyStores(route, trigger) {
-    const span = beginSpan();
+  function notifyStores(route) {
     const errors = [];
     applying(() => {
       for (const reg of [...registrations]) {
@@ -191,9 +172,6 @@ export function createRouter() {
         }
       }
     });
-    if (span !== null) {
-      endRouterStep(span, 'onRoute', { trigger, errors: errors.length });
-    }
     if (errors.length === 1) throw errors[0];
     if (errors.length > 1) {
       throw new AggregateError(
@@ -204,7 +182,6 @@ export function createRouter() {
   }
 
   function write(route, replace) {
-    const span = beginSpan();
     const url = buildURL(route);
     if (replace) {
       history.replaceState(null, '', url);
@@ -212,9 +189,6 @@ export function createRouter() {
       history.pushState(null, '', url);
     }
     current = route;
-    if (span !== null) {
-      endRouterStep(span, 'write', { mode: replace ? 'replace' : 'push' });
-    }
   }
 
   function readURL(reg) {
@@ -254,13 +228,6 @@ export function createRouter() {
 
   // Rebuilds the URL from every store, so stores that change together produce one history entry
   function syncStores() {
-    const span = beginSpan();
-    const outcome = syncURL();
-    if (span !== null) endRouterStep(span, 'sync', { outcome });
-  }
-
-  // unchanged: no store's URL changed; current: they rebuilt the URL already shown
-  function syncURL() {
     let changed = false;
     let push = false;
     for (const reg of registrations) {
@@ -278,11 +245,10 @@ export function createRouter() {
         );
       }
     }
-    if (!changed) return 'unchanged';
+    if (!changed) return;
     const route = mergedRoute();
-    if (routeKey(route) === routeKey(current)) return 'current';
+    if (routeKey(route) === routeKey(current)) return;
     write(route, !push || applyingRoute > 0);
-    return 'written';
   }
 
   async function navigateTo(path, opts, replace) {
@@ -290,7 +256,7 @@ export function createRouter() {
     if (!(await checkGuards(route))) return;
     // Navigating to the current URL replaces the entry instead of duplicating it
     write(route, replace || routeKey(route) === routeKey(current));
-    notifyStores(route, replace ? 'replace' : 'navigate');
+    notifyStores(route);
   }
 
   async function onPopState() {
@@ -304,7 +270,7 @@ export function createRouter() {
     }
     if (!allowed) return;
     current = route;
-    notifyStores(route, 'popstate');
+    notifyStores(route);
   }
 
   window.addEventListener('popstate', onPopState);
@@ -312,7 +278,6 @@ export function createRouter() {
   const router = {
     register(store, options) {
       validateOptions(store, options);
-      const span = beginSpan();
       const reg = {
         store,
         options,
@@ -341,7 +306,6 @@ export function createRouter() {
 
       registrations.push(reg);
       if (options.toURL) reg.disposer = observe(store, () => syncStores());
-      if (span !== null) endRouterRegister(span, store);
 
       return () => {
         if (reg.disposed) return;

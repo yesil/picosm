@@ -1,21 +1,12 @@
 import { expect } from '@esm-bundle/chai';
 import { html, LitElement } from 'lit';
-import {
-  makeObservable,
-  notify,
-  observe,
-  subscribe,
-} from '../src/makeObservable.js';
+import { makeObservable } from '../src/makeObservable.js';
 import { makeLitObserver } from '../src/makeLitObserver.js';
-import { reaction } from '../src/reaction.js';
-import { createRouter } from '../src/router.js';
-import { track } from '../src/track.js';
 import { activeTrace, startTrace, stopTrace } from '../src/trace.js';
 
 // Waits until every pending microtask has run
 const settle = () => new Promise((r) => setTimeout(r, 0));
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const ORIGINAL_PATH = window.location.pathname;
 
 function spans(trace, kind) {
   return trace.traceEvents.filter(
@@ -24,14 +15,7 @@ function spans(trace, kind) {
 }
 
 class Counter {
-  static observableActions = [
-    'increment',
-    'fail',
-    'load',
-    'loadAndFail',
-    'rename',
-  ];
-  static computedProperties = ['double'];
+  static observableActions = ['increment', 'rename'];
 
   count = 0;
   label = 'start';
@@ -40,37 +24,12 @@ class Counter {
     this.count += 1;
   }
 
-  fail() {
-    throw new Error('failed');
-  }
-
-  async load() {
-    await Promise.resolve();
-    this.count += 1;
-  }
-
-  async loadAndFail() {
-    await Promise.resolve();
-    throw new Error('rejected');
-  }
-
   rename(label) {
     this.label = label;
-    return `returned ${label}`;
-  }
-
-  get double() {
-    return this.count * 2;
   }
 }
 
 makeObservable(Counter);
-
-class Summary {
-  static observableActions = [];
-}
-
-makeObservable(Summary);
 
 class CounterView extends LitElement {
   static properties = {
@@ -104,11 +63,22 @@ async function connectedView(tag, counter) {
   return view;
 }
 
-describe('startTrace and stopTrace', () => {
-  afterEach(() => {
-    if (activeTrace !== null) stopTrace();
-  });
+// Runs a store action and waits until the view has updated
+async function change(view, action) {
+  action();
+  await settle();
+  await view.updateComplete;
+}
 
+afterEach(() => {
+  if (activeTrace !== null) stopTrace();
+  for (const view of document.querySelectorAll(
+    'trace-counter-view, trace-slow-counter-view',
+  ))
+    view.remove();
+});
+
+describe('startTrace and stopTrace', () => {
   it('returns a Chrome trace that starts at its performance mark', () => {
     startTrace();
     const trace = stopTrace();
@@ -124,14 +94,13 @@ describe('startTrace and stopTrace', () => {
     expect(JSON.parse(JSON.stringify(trace))).to.deep.equal(trace);
   });
 
-  it('records only the work between startTrace and stopTrace', async () => {
+  it('records only the updates between startTrace and stopTrace', async () => {
     const counter = new Counter();
-    counter.increment();
-    await settle();
+    const view = await connectedView('trace-counter-view', counter);
+    await change(view, () => counter.rename('before'));
     startTrace();
     const trace = stopTrace();
-    counter.increment();
-    await settle();
+    await change(view, () => counter.rename('after'));
     expect(trace.traceEvents.filter(({ ph }) => ph !== 'M')).to.deep.equal([]);
   });
 
@@ -158,219 +127,42 @@ describe('startTrace and stopTrace', () => {
 
   it('counts the events past maxEvents instead of recording them', async () => {
     const counter = new Counter();
+    const view = await connectedView('trace-counter-view', counter);
     startTrace({ maxEvents: 2 });
-    for (let index = 0; index < 5; index += 1) counter.increment();
-    await settle();
+    await change(view, () => counter.rename('first'));
+    await change(view, () => counter.rename('second'));
     const trace = stopTrace();
-    // Five actions and one notification, two of them recorded
-    expect(trace.traceEvents.filter(({ ph }) => ph !== 'M')).to.have.length(2);
-    expect(trace.otherData.droppedEventCount).to.equal(4);
+    // Two requests and two updates, the first request and update recorded
+    expect(
+      trace.traceEvents
+        .filter(({ ph }) => ph !== 'M')
+        .map(({ args }) => args.kind),
+    ).to.deep.equal(['view-request', 'view-update']);
+    expect(trace.otherData.droppedEventCount).to.equal(2);
   });
 });
 
-describe('Tracing stores', () => {
-  afterEach(() => {
-    if (activeTrace !== null) stopTrace();
-  });
-
-  it('records each action with its instance and outcome', () => {
-    const first = new Counter();
-    const second = new Counter();
-    startTrace();
-    first.increment();
-    second.increment();
-    first.increment();
-    expect(() => first.fail()).to.throw('failed');
-    const actions = spans(stopTrace(), 'action');
-    expect(
-      actions.map(({ name, args }) => [name, args.instance, args.outcome]),
-    ).to.deep.equal([
-      ['Counter.increment', 'Counter#1', 'returned'],
-      ['Counter.increment', 'Counter#2', 'returned'],
-      ['Counter.increment', 'Counter#1', 'returned'],
-      ['Counter.fail', 'Counter#1', 'threw'],
-    ]);
-    for (const { ts, dur } of actions) {
-      expect(ts).to.be.a('number');
-      expect(dur).to.be.at.least(0);
-    }
-  });
-
-  it('traces async actions until their Promise settles', async () => {
-    const counter = new Counter();
-    startTrace();
-    await counter.load();
-    await counter.loadAndFail().catch(() => {});
-    const trace = stopTrace();
-    const actions = spans(trace, 'action');
-    expect(actions.map(({ args }) => args.outcome)).to.deep.equal([
-      'pending',
-      'pending',
-    ]);
-    const settled = spans(trace, 'action-settled');
-    expect(
-      settled.map(({ name, args }) => [name, args.action, args.outcome]),
-    ).to.deep.equal([
-      ['Counter.load settled', actions[0].args.id, 'resolved'],
-      ['Counter.loadAndFail settled', actions[1].args.id, 'rejected'],
-    ]);
-    const asyncEvents = trace.traceEvents.filter(({ ph }) => 'be'.includes(ph));
-    expect(
-      asyncEvents.map(({ ph, name, id, args }) => [ph, name, id, args.outcome]),
-    ).to.deep.equal([
-      ['b', 'Counter.load', actions[0].args.id, undefined],
-      ['e', 'Counter.load', actions[0].args.id, 'resolved'],
-      ['b', 'Counter.loadAndFail', actions[1].args.id, undefined],
-      ['e', 'Counter.loadAndFail', actions[1].args.id, 'rejected'],
-    ]);
-  });
-
-  it('records one notification per batch, naming the actions that caused it', async () => {
-    const counter = new Counter();
-    observe(counter, () => {});
-    startTrace();
-    counter.increment();
-    counter.increment();
-    await settle();
-    const trace = stopTrace();
-    const [notification] = spans(trace, 'notification');
-    expect(spans(trace, 'notification')).to.have.length(1);
-    expect(notification.name).to.equal('Counter notification');
-    expect(notification.args.observers).to.equal(1);
-    expect(notification.args.causes).to.deep.equal(
-      spans(trace, 'action').map(({ args }) => args.id),
-    );
-  });
-
-  it('links a track() forward between the two notifications', async () => {
-    const source = new Counter();
-    const target = new Summary();
-    track(target, source);
-    observe(target, () => {});
-    await settle();
-    startTrace();
-    source.increment();
-    await settle();
-    const trace = stopTrace();
-    const [action] = spans(trace, 'action');
-    const [sourceNotification, targetNotification] = spans(
-      trace,
-      'notification',
-    );
-    const [forward] = spans(trace, 'track');
-    expect(sourceNotification.args.causes).to.deep.equal([action.args.id]);
-    expect(forward.name).to.equal('track Counter → Summary');
-    expect(forward.args).to.include({
-      source: 'Counter#1',
-      target: 'Summary#1',
-      notification: sourceNotification.args.id,
-    });
-    expect(targetNotification.name).to.equal('Summary notification');
-    expect(targetNotification.args.causes).to.deep.equal([forward.args.id]);
-  });
-
-  it('records whether a reaction selected changed values', async () => {
-    const counter = new Counter();
-    let isSkipped = false;
-    reaction(
-      counter,
-      function badgeValues(target) {
-        return isSkipped ? [] : [target.count > 0];
-      },
-      function showBadge() {},
-    );
-    startTrace();
-    counter.increment();
-    await settle();
-    counter.increment();
-    await settle();
-    isSkipped = true;
-    counter.increment();
-    await settle();
-    const trace = stopTrace();
-    const reactions = spans(trace, 'reaction');
-    expect(reactions.map(({ args }) => args.result)).to.deep.equal([
-      'changed',
-      'unchanged',
-      'skipped',
-    ]);
-    expect(reactions[0].name).to.equal('reaction showBadge');
-    expect(reactions[0].args).to.include({
-      selector: 'badgeValues',
-      effect: 'showBadge',
-    });
-    expect(reactions[0].args.targets).to.deep.equal(['Counter#1']);
-    expect(reactions.map(({ args }) => args.notification)).to.deep.equal(
-      spans(trace, 'notification').map(({ args }) => args.id),
-    );
-  });
-
-  it('records recomputed values and counts cache hits', () => {
-    const counter = new Counter();
-    startTrace();
-    expect(counter.double).to.equal(0);
-    expect(counter.double).to.equal(0);
-    expect(counter.double).to.equal(0);
-    const trace = stopTrace();
-    expect(spans(trace, 'computed').map(({ name }) => name)).to.deep.equal([
-      'Counter.double computed',
-    ]);
-    expect(trace.otherData.computedHits).to.deep.equal({ 'Counter.double': 2 });
-  });
-
-  it('records messages with their subscriber count', () => {
-    const counter = new Counter();
-    subscribe(counter, () => {});
-    startTrace();
-    notify(counter, { secret: 'message value' });
-    const [message] = spans(stopTrace(), 'message');
-    expect(message.name).to.equal('Counter message');
-    expect(message.args.subscribers).to.equal(1);
-  });
-
-  it('never records arguments, return values, messages or state', async () => {
-    const counter = new Counter();
-    observe(counter, () => {});
-    subscribe(counter, () => {});
-    startTrace();
-    counter.rename('secret argument');
-    notify(counter, 'secret message');
-    await settle();
-    expect(JSON.stringify(stopTrace())).not.to.include('secret');
-  });
-});
-
-describe('Tracing Lit views', () => {
-  afterEach(() => {
-    if (activeTrace !== null) stopTrace();
-    for (const view of document.querySelectorAll(
-      'trace-counter-view, trace-slow-counter-view',
-    ))
-      view.remove();
-  });
-
+describe('Tracing Lit view updates', () => {
   it('records store-driven updates with their cause and DOM mutations', async () => {
     const counter = new Counter();
     const view = await connectedView('trace-counter-view', counter);
     startTrace();
-    counter.rename('changed');
-    await settle();
-    await view.updateComplete;
+    await change(view, () => counter.rename('changed'));
     // The view renders the label only, so this update changes no DOM
-    counter.increment();
-    await settle();
-    await view.updateComplete;
+    await change(view, () => counter.increment());
     const trace = stopTrace();
     const requests = spans(trace, 'view-request');
     expect(
-      requests.map(({ name, args }) => [name, args.property, args.store]),
+      requests.map(({ name, args }) => [
+        name,
+        args.property,
+        args.store,
+        args.throttleMs,
+      ]),
     ).to.deep.equal([
-      ['<trace-counter-view> update requested', 'counter', 'Counter#1'],
-      ['<trace-counter-view> update requested', 'counter', 'Counter#1'],
+      ['<trace-counter-view> update requested', 'counter', 'Counter#1', 0],
+      ['<trace-counter-view> update requested', 'counter', 'Counter#1', 0],
     ]);
-    expect(requests.map(({ args }) => args.notification)).to.deep.equal(
-      spans(trace, 'notification').map(({ args }) => args.id),
-    );
     const updates = spans(trace, 'view-update');
     expect(
       updates.map(({ name, args }) => [name, args.causes, args.firstUpdate]),
@@ -380,6 +172,24 @@ describe('Tracing Lit views', () => {
     ]);
     expect(updates[0].args.domMutations).to.be.above(0);
     expect(updates[1].args.domMutations).to.equal(0);
+    for (const { ts, dur } of [...requests, ...updates]) {
+      expect(ts).to.be.a('number');
+      expect(dur).to.be.at.least(0);
+    }
+  });
+
+  it('numbers stores of the same class in order of first appearance', async () => {
+    const first = new Counter();
+    const second = new Counter();
+    const firstView = await connectedView('trace-counter-view', first);
+    const secondView = await connectedView('trace-counter-view', second);
+    startTrace();
+    await change(secondView, () => second.increment());
+    await change(firstView, () => first.increment());
+    await change(secondView, () => second.increment());
+    expect(
+      spans(stopTrace(), 'view-request').map(({ args }) => args.store),
+    ).to.deep.equal(['Counter#1', 'Counter#2', 'Counter#1']);
   });
 
   it('records first and property-driven updates without a store cause', async () => {
@@ -401,27 +211,28 @@ describe('Tracing Lit views', () => {
     ]);
   });
 
-  it('records throttled requests outside the notification that caused them', async () => {
+  it('records the throttle of a throttled observer', async () => {
     const counter = new Counter();
     const view = await connectedView('trace-slow-counter-view', counter);
     startTrace();
     counter.rename('first');
     await settle();
+    // Within the throttle window: requested when the window closes
     counter.rename('second');
     await settle();
     await wait(40);
     await view.updateComplete;
-    const trace = stopTrace();
-    const [notification] = spans(trace, 'notification');
     expect(
-      spans(trace, 'view-request').map(({ args }) => [
-        args.notification,
-        args.throttleMs,
-      ]),
-    ).to.deep.equal([
-      [notification.args.id, 20],
-      [null, 20],
-    ]);
+      spans(stopTrace(), 'view-request').map(({ args }) => args.throttleMs),
+    ).to.deep.equal([20, 20]);
+  });
+
+  it('never records store values', async () => {
+    const counter = new Counter();
+    const view = await connectedView('trace-counter-view', counter);
+    startTrace();
+    await change(view, () => counter.rename('secret label'));
+    expect(JSON.stringify(stopTrace())).not.to.include('secret');
   });
 
   it('creates no MutationObserver while no trace records', async () => {
@@ -436,82 +247,14 @@ describe('Tracing Lit views', () => {
       }
     };
     try {
-      counter.rename('untraced');
-      await settle();
-      await view.updateComplete;
+      await change(view, () => counter.rename('untraced'));
       expect(createdCount).to.equal(0);
       startTrace();
-      counter.rename('traced');
-      await settle();
-      await view.updateComplete;
+      await change(view, () => counter.rename('traced'));
       stopTrace();
       expect(createdCount).to.equal(1);
     } finally {
       window.MutationObserver = NativeMutationObserver;
     }
-  });
-});
-
-class Filters {
-  static observableActions = ['applyRoute', 'setTerm'];
-
-  term = '';
-
-  applyRoute(route) {
-    this.term = route.query.term ?? '';
-  }
-
-  setTerm(term) {
-    this.term = term;
-  }
-}
-
-makeObservable(Filters);
-
-describe('Tracing the router', () => {
-  let router;
-
-  afterEach(() => {
-    if (activeTrace !== null) stopTrace();
-    router?.destroy();
-    history.replaceState(null, '', ORIGINAL_PATH);
-  });
-
-  it('records router steps without paths, queries or hashes', async () => {
-    const filters = new Filters();
-    startTrace();
-    router = createRouter();
-    router.register(filters, {
-      onRoute: (route) => filters.applyRoute(route),
-      toURL: () => ({ query: { term: filters.term } }),
-    });
-    await router.navigate('/secret-path?term=secret-term#secret-hash');
-    await settle();
-    filters.setTerm('secret-update');
-    await settle();
-    const trace = stopTrace();
-    expect(
-      spans(trace, 'router').map(({ name, args }) => [
-        name,
-        args.mode ?? args.trigger ?? args.outcome ?? args.store,
-      ]),
-    ).to.deep.equal([
-      ['router register', 'Filters#1'],
-      // The route applied on registration leaves the URL as it was
-      ['router sync', 'unchanged'],
-      ['router write', 'push'],
-      ['router onRoute', 'navigate'],
-      ['router sync', 'current'],
-      ['router write', 'push'],
-      ['router sync', 'written'],
-    ]);
-    const guards = trace.traceEvents.filter(
-      ({ name }) => name === 'router guards',
-    );
-    expect(guards.map(({ ph, args }) => [ph, args.outcome])).to.deep.equal([
-      ['b', undefined],
-      ['e', 'allowed'],
-    ]);
-    expect(JSON.stringify(trace)).not.to.include('secret');
   });
 });

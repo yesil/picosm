@@ -1,17 +1,4 @@
 import { assertObservable, reportAsync } from './internal.js';
-import {
-  activeTrace,
-  beginCause,
-  beginNotification,
-  beginSpan,
-  endAction,
-  endComputed,
-  endMessage,
-  endNotification,
-  traceAsyncAction,
-  traceComputedHit,
-  traceNotificationQueued,
-} from './trace.js';
 
 const ACTION = Symbol('picosm.action');
 const COMPUTED = Symbol('picosm.computed');
@@ -57,29 +44,17 @@ function instrumentAction(constructor, methodName) {
       this.__resetComputedProperties();
       this.__notifyObservers();
     };
-    const span = beginCause();
     let response;
     try {
       response = originalMethod.call(this, ...args);
     } catch (error) {
       settle();
-      if (span !== null) endAction(span, this, methodName, 'threw');
       throw error;
     }
     if (response instanceof Promise) {
-      if (span === null) return response.finally(settle);
-      const tracedSettle = traceAsyncAction(
-        span,
-        this,
-        methodName,
-        response,
-        settle,
-      );
-      endAction(span, this, methodName, 'pending');
-      return response.finally(tracedSettle);
+      return response.finally(settle);
     }
     settle();
-    if (span !== null) endAction(span, this, methodName, 'returned');
     return response;
   };
   descriptor.value[ACTION] = true;
@@ -113,15 +88,12 @@ function instrumentComputed(constructor, getterName) {
 
     // Keyed by getter so an overriding getter and super's getter keep separate values
     if (this.__computedProperties.has(originalGetter)) {
-      if (activeTrace !== null) traceComputedHit(this, getterName);
       return this.__computedProperties.get(originalGetter);
     }
 
     // Calculate and cache the value
-    const span = beginSpan();
     const cachedValue = originalGetter.call(this);
     this.__computedProperties.set(originalGetter, cachedValue);
-    if (span !== null) endComputed(span, this, getterName);
     return cachedValue;
   };
   descriptor.get[COMPUTED] = true;
@@ -161,19 +133,13 @@ function declaredNames(constructor, listName) {
 
 const observableMethods = {
   __notifyObservers() {
-    if (activeTrace !== null) traceNotificationQueued(this);
     if (pendingNotifications.has(this)) return;
     pendingNotifications.add(this);
     queueMicrotask(() => {
       pendingNotifications.delete(this);
-      const span = beginNotification(this);
-      if (!this.__observers) {
-        if (span !== null) endNotification(span, this, 0);
-        return;
-      }
+      if (!this.__observers) return;
       // Iterate a snapshot: observers added now wait for the next change
-      const listeners = [...this.__observers];
-      for (const listener of listeners) {
+      for (const listener of [...this.__observers]) {
         // Skip observers disposed by an earlier observer in this pass
         if (!this.__observers.has(listener)) continue;
         try {
@@ -183,7 +149,6 @@ const observableMethods = {
           reportAsync(error);
         }
       }
-      if (span !== null) endNotification(span, this, listeners.length);
     });
   },
 
@@ -324,10 +289,7 @@ export function subscribe(target, onMessageCallback) {
 export function notify(target, message) {
   assertObservable(target, 'notify()');
   if (!target.__subscribers) return;
-  const span = beginSpan();
-  const listeners = [...target.__subscribers];
-  for (const listener of listeners) {
+  for (const listener of [...target.__subscribers]) {
     if (target.__subscribers.has(listener)) listener(message);
   }
-  if (span !== null) endMessage(span, target, listeners.length);
 }

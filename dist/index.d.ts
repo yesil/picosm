@@ -106,17 +106,16 @@ export interface TraceOptions {
 /** One event in the Chrome trace event format */
 export interface TraceEvent {
   name: string;
-  ph: 'X' | 'b' | 'e' | 'M';
+  /** X: a span, M: process and thread names */
+  ph: 'X' | 'M';
   pid: number;
   tid: number;
   cat?: string;
   /** Microseconds on the performance.now() clock */
   ts?: number;
-  /** Microseconds, for complete ('X') events */
+  /** Microseconds */
   dur?: number;
-  /** Pairs async begin ('b') and end ('e') events */
-  id?: number;
-  args?: Record<string, unknown>;
+  args: Record<string, unknown>;
 }
 
 /** A recorded trace in the Chrome trace event format, ready for JSON.stringify */
@@ -130,15 +129,13 @@ export interface Trace {
     endTime: number;
     /** Events not recorded because the trace reached maxEvents */
     droppedEventCount: number;
-    /** Computed values read from their cache, by Class.getter */
-    computedHits: Record<string, number>;
   };
 }
 
 /**
- * Starts recording a performance trace of actions, notifications, observers, reactions, track()
- * forwards, Lit updates and router steps. Records names, counts and timings only, never arguments,
- * values, state or URLs. Adds a 'picosm trace start' performance mark.
+ * Starts recording which store changes ask Lit views made with makeLitObserver to update, and each
+ * update's duration and DOM mutation count. Records names, counts and timings only, never store
+ * values. Adds a 'picosm trace start' performance mark.
  * Throws when a trace is already recording, or when maxEvents is not a positive integer.
  */
 export function startTrace(options?: TraceOptions): void;
