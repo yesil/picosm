@@ -118,6 +118,16 @@ export interface TraceEvent {
   args: Record<string, unknown>;
 }
 
+/** The updates of every view element with one tag name during a trace */
+export interface TraceViewSummary {
+  /** Updates, first updates and those past maxEvents included */
+  updates: number;
+  /** updates divided by the trace's duration in seconds; null when the trace lasted 0 ms on the browser's rounded clock */
+  updatesPerSecond: number | null;
+  /** Milliseconds spent in those updates */
+  totalMs: number;
+}
+
 /** A recorded trace in the Chrome trace event format, ready for JSON.stringify */
 export interface Trace {
   traceEvents: TraceEvent[];
@@ -129,12 +139,14 @@ export interface Trace {
     endTime: number;
     /** Events not recorded because the trace reached maxEvents */
     droppedEventCount: number;
+    /** Per view tag name, the views with the most time spent in updates first */
+    views: Record<string, TraceViewSummary>;
   };
 }
 
 /**
  * Starts recording which store changes ask Lit views made with makeLitObserver to update, and each
- * update's duration and DOM mutation count. Records names, counts and timings only, never store
+ * update's duration, summed up per view. Records names, counts and timings only, never store
  * values. Adds a 'picosm trace start' performance mark.
  * Throws when a trace is already recording, or when maxEvents is not a positive integer.
  */

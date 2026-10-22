@@ -2,7 +2,6 @@ import { observe } from './makeObservable.js';
 import {
   beginSpan,
   beginViewUpdate,
-  cancelViewUpdate,
   endViewRequest,
   endViewUpdate,
 } from './trace.js';
@@ -29,18 +28,13 @@ class ObserverController {
     }
     this.disposers.clear();
     this.observed.clear();
-    if (this.tracedUpdate !== null) {
-      cancelViewUpdate(this.tracedUpdate);
-      this.tracedUpdate = null;
-    }
   }
 
   hostUpdate() {
     // Lit also updates disconnected elements; observing then would let the store retain the element
     if (this.host.isConnected) this.observeProperties();
-    // An update that threw never reached hostUpdated
-    if (this.tracedUpdate !== null) cancelViewUpdate(this.tracedUpdate);
-    this.tracedUpdate = beginViewUpdate(this.host, this.updateCauses);
+    // Replaces the span of an update that threw before reaching hostUpdated
+    this.tracedUpdate = beginViewUpdate(this.updateCauses);
     // Requests made during this update schedule the next one
     if (this.updateCauses.length > 0) this.updateCauses = [];
   }

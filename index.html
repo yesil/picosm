@@ -364,6 +364,7 @@
 <span class="line"><span class="hljs-title function_">startTrace</span>();</span>
 <span class="line"><span class="hljs-comment">// … use the app …</span></span>
 <span class="line"><span class="hljs-keyword">const</span> trace = <span class="hljs-title function_">stopTrace</span>();</span>
+<span class="line"><span class="hljs-variable language_">console</span>.<span class="hljs-title function_">table</span>(trace.<span class="hljs-property">otherData</span>.<span class="hljs-property">views</span>); <span class="hljs-comment">// updates, updatesPerSecond and totalMs per view</span></span>
 <span class="line"><span class="hljs-comment">// In the DevTools console, copy(JSON.stringify(trace)) puts it on the clipboard</span></span></code></pre>
 <p>Every span has a numeric <code>args.id</code>, and <code>args.kind</code> says what it records:</p>
 <table>
@@ -382,16 +383,17 @@
 <tr>
 <td><code>view-update</code></td>
 <td><code>&lt;cart-view&gt; update</code></td>
-<td>Lit&#39;s render and DOM commit: <code>firstUpdate</code>, <code>domMutations</code> in the render root, and <code>causes</code>, the ids of the requests it answers, empty when a property change caused it. An update with no DOM mutations rendered without changing anything.</td>
+<td>Lit&#39;s render and DOM commit: <code>firstUpdate</code>, and <code>causes</code>, the ids of the requests it answers, empty when a property change caused it</td>
 </tr>
 </tbody></table>
+<p><code>otherData.views</code> sums up the updates of each view tag name, the views with the most time spent first: <code>updates</code> counts every update of its elements, first updates included, <code>updatesPerSecond</code> divides that count by the trace&#39;s duration, and <code>totalMs</code> adds up the updates&#39; durations. A trace that lasted 0 ms on the browser&#39;s rounded clock has an <code>updatesPerSecond</code> of <code>null</code>.</p>
 <p>A trace holds names, counts and timings only, never store values. Store names come from <code>constructor.name</code>, so trace a build that keeps class names: a minifier that renames classes renames them in the trace too.</p>
 <p><code>startTrace()</code> adds a <code>picosm trace start</code> performance mark, and <code>otherData.startTime</code> is that mark&#39;s <code>startTime</code>. Event times (<code>ts</code>, <code>dur</code>) are microseconds on the <code>performance.now()</code> clock, so you can line the trace up with a browser trace recorded at the same time. Browsers round <code>performance.now()</code>, so a short span can show a duration of 0.</p>
-<p>While no trace is recording, a view only checks whether one is. While recording, every update observes its render root with a <code>MutationObserver</code> to count its DOM mutations. <code>startTrace({ maxEvents })</code> limits the recorded events, 100,000 by default, and <code>otherData.droppedEventCount</code> counts the events past the limit. <code>startTrace()</code> throws while a trace is recording, and <code>stopTrace()</code> throws when none is.</p>
+<p>While no trace is recording, a view only checks whether one is. <code>startTrace({ maxEvents })</code> limits the recorded events, 100,000 by default, and <code>otherData.droppedEventCount</code> counts the events past the limit; <code>otherData.views</code> still counts their updates. <code>startTrace()</code> throws while a trace is recording, and <code>stopTrace()</code> throws when none is.</p>
 </div></section></main>
   </div>
   <footer class="status-bar">
-    <span>picosm 3.0.0</span>
+    <span>picosm 3.1.0</span>
     <span>ISC</span>
     <nav aria-label="Project">
       <a href="examples/">Live tour</a>

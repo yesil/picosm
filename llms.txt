@@ -1,6 +1,6 @@
 # picosm
 
-> State management for web apps written in plain HTML and JavaScript modules, with no bundler: observable classes with explicit actions, cached getters and batched notifications, and no dependencies. Documentation for version 3.0.0.
+> State management for web apps written in plain HTML and JavaScript modules, with no bundler: observable classes with explicit actions, cached getters and batched notifications, and no dependencies. Documentation for version 3.1.0.
 
 Only methods listed in `observableActions` notify subscribers and clear cached getters; assigning a field does neither. Notifications are delivered in a microtask, and async actions notify after their Promise settles. Every subscription returns a disposer.
 
