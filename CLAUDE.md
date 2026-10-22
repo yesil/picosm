@@ -39,6 +39,7 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 | Message passing | `subscribe(target, cb)` + `notify(target, msg)` |
 | Lit integration | `makeLitObserver(MyElement)` + `observe: true` in properties |
 | Async actions | List the method in `observableActions` — picosm detects the returned Promise |
+| Trace Lit view updates | `startTrace()`, then `stopTrace()` returns a Chrome trace |
 
 **Routing:** picosm uses store-driven routing: `createRouter()` + `router.register(store, { onRoute, toURL, before })` — each store registers itself and owns its URL segment.
 
@@ -77,6 +78,7 @@ Only methods listed in `observableActions` notify observers. Direct property ass
 - `src/track.js` — forward notifications between observables
 - `src/makeLitObserver.js` — LitElement integration via reactive controller
 - `src/router.js` — store-driven URL routing via History API (separate export: `picosm/router`)
+- `src/trace.js` — opt-in tracing of Lit view update requests and updates; only `startTrace` and `stopTrace` are exported from the barrel
 - `src/internal.js` — shared helpers (`assertObservable`, `reportAsync`), not exported from the barrel
 - `src/index.js` — barrel export (includes router)
 - Tests are browser-based (web-test-runner), not Node

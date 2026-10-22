@@ -97,4 +97,53 @@ export function track(target: object, source: object): Disposer;
  */
 export function makeLitObserver<T extends new (...args: any[]) => any>(constructor: T): T;
 
+/** Options for startTrace */
+export interface TraceOptions {
+  /** Most events to record (default 100000). Later events are counted in otherData.droppedEventCount. */
+  maxEvents?: number;
+}
+
+/** One event in the Chrome trace event format */
+export interface TraceEvent {
+  name: string;
+  /** X: a span, M: process and thread names */
+  ph: 'X' | 'M';
+  pid: number;
+  tid: number;
+  cat?: string;
+  /** Microseconds on the performance.now() clock */
+  ts?: number;
+  /** Microseconds */
+  dur?: number;
+  args: Record<string, unknown>;
+}
+
+/** A recorded trace in the Chrome trace event format, ready for JSON.stringify */
+export interface Trace {
+  traceEvents: TraceEvent[];
+  displayTimeUnit: 'ms';
+  otherData: {
+    /** performance.now() when the trace started, the startTime of its 'picosm trace start' mark */
+    startTime: number;
+    /** performance.now() when the trace stopped */
+    endTime: number;
+    /** Events not recorded because the trace reached maxEvents */
+    droppedEventCount: number;
+  };
+}
+
+/**
+ * Starts recording which store changes ask Lit views made with makeLitObserver to update, and each
+ * update's duration and DOM mutation count. Records names, counts and timings only, never store
+ * values. Adds a 'picosm trace start' performance mark.
+ * Throws when a trace is already recording, or when maxEvents is not a positive integer.
+ */
+export function startTrace(options?: TraceOptions): void;
+
+/**
+ * Stops recording and returns the trace, which Perfetto and the Chrome DevTools Performance panel open.
+ * Throws when no trace is recording.
+ */
+export function stopTrace(): Trace;
+
 export * from './router';

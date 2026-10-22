@@ -33,6 +33,7 @@
 <li><a class="file" href="#api">api.md</a><ul><li><a class="symbol" href="#makeobservableconstructor"><code>makeObservable(constructor)</code></a></li><li><a class="symbol" href="#observetarget-callback-timeout"><code>observe(target, callback, timeout?)</code></a></li><li><a class="symbol" href="#reactiontarget-selector-effect-timeout"><code>reaction(target, selector, effect, timeout?)</code></a></li><li><a class="symbol" href="#tracktarget-source"><code>track(target, source)</code></a></li><li><a class="symbol" href="#subscribetarget-callback-notifytarget-message"><code>subscribe(target, callback)</code> / <code>notify(target, message)</code></a></li><li><a class="symbol" href="#async-actions">Async actions</a></li></ul></li>
 <li><a class="file" href="#lit">lit.md</a></li>
 <li><a class="file" href="#routing">routing.md</a><ul><li><a class="symbol" href="#registering-stores">Registering stores</a></li><li><a class="symbol" href="#navigation">Navigation</a></li><li><a class="symbol" href="#event-delegation">Event delegation</a></li><li><a class="symbol" href="#refresh-and-deep-links">Refresh and deep links</a></li><li><a class="symbol" href="#navigation-guards">Navigation guards</a></li><li><a class="symbol" href="#persisting-store-state">Persisting store state</a></li></ul></li>
+<li><a class="file" href="#tracing">tracing.md</a></li>
 </ul></li></ul>
       </nav>
     </aside>
@@ -355,6 +356,38 @@
 <span class="line">  <span class="hljs-attr">storage</span>: <span class="hljs-variable language_">sessionStorage</span>,  <span class="hljs-comment">// survives page refresh; use localStorage to survive browser restart</span></span>
 <span class="line">  <span class="hljs-attr">key</span>: <span class="hljs-string">&#x27;filters&#x27;</span>,</span>
 <span class="line">});</span></code></pre>
+</div></section>
+<section aria-labelledby="tracing"><div class="tab-bar" aria-hidden="true"><span class="tab">tracing.md</span></div><div class="doc"><h2 id="tracing">Performance tracing</h2>
+<p><code>startTrace()</code> records which store changes ask Lit views to update, and what each update cost, until <code>stopTrace()</code> returns the trace. It covers views made with <code>makeLitObserver</code>. The trace uses the Chrome trace event format, so <a href="https://ui.perfetto.dev">Perfetto</a> and the Chrome DevTools Performance panel open it as a JSON file.</p>
+<pre class="language-javascript"><code><span class="line"><span class="hljs-keyword">import</span> { startTrace, stopTrace } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;picosm&#x27;</span>;</span>
+<span class="line"></span>
+<span class="line"><span class="hljs-title function_">startTrace</span>();</span>
+<span class="line"><span class="hljs-comment">// … use the app …</span></span>
+<span class="line"><span class="hljs-keyword">const</span> trace = <span class="hljs-title function_">stopTrace</span>();</span>
+<span class="line"><span class="hljs-comment">// In the DevTools console, copy(JSON.stringify(trace)) puts it on the clipboard</span></span></code></pre>
+<p>Every span has a numeric <code>args.id</code>, and <code>args.kind</code> says what it records:</p>
+<table>
+<thead>
+<tr>
+<th><code>kind</code></th>
+<th>Span name</th>
+<th>Details in <code>args</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>view-request</code></td>
+<td><code>&lt;cart-view&gt; update requested</code></td>
+<td>An observed store changed and the view called <code>requestUpdate</code>: <code>view</code>, <code>property</code>, <code>store</code> (<code>Cart#1</code>, numbering instances of a class in order of appearance) and <code>throttleMs</code>, 0 for a property without <code>throttle</code></td>
+</tr>
+<tr>
+<td><code>view-update</code></td>
+<td><code>&lt;cart-view&gt; update</code></td>
+<td>Lit&#39;s render and DOM commit: <code>firstUpdate</code>, <code>domMutations</code> in the render root, and <code>causes</code>, the ids of the requests it answers, empty when a property change caused it. An update with no DOM mutations rendered without changing anything.</td>
+</tr>
+</tbody></table>
+<p>A trace holds names, counts and timings only, never store values. Store names come from <code>constructor.name</code>, so trace a build that keeps class names: a minifier that renames classes renames them in the trace too.</p>
+<p><code>startTrace()</code> adds a <code>picosm trace start</code> performance mark, and <code>otherData.startTime</code> is that mark&#39;s <code>startTime</code>. Event times (<code>ts</code>, <code>dur</code>) are microseconds on the <code>performance.now()</code> clock, so you can line the trace up with a browser trace recorded at the same time. Browsers round <code>performance.now()</code>, so a short span can show a duration of 0.</p>
+<p>While no trace is recording, a view only checks whether one is. While recording, every update observes its render root with a <code>MutationObserver</code> to count its DOM mutations. <code>startTrace({ maxEvents })</code> limits the recorded events, 100,000 by default, and <code>otherData.droppedEventCount</code> counts the events past the limit. <code>startTrace()</code> throws while a trace is recording, and <code>stopTrace()</code> throws when none is.</p>
 </div></section></main>
   </div>
   <footer class="status-bar">

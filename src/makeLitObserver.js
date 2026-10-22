@@ -1,10 +1,20 @@
 import { observe } from './makeObservable.js';
+import {
+  beginSpan,
+  beginViewUpdate,
+  cancelViewUpdate,
+  endViewRequest,
+  endViewUpdate,
+} from './trace.js';
 
 class ObserverController {
   constructor(host) {
     this.host = host;
     this.disposers = new Map();
     this.observed = new Map();
+    // While a trace records: ids of the store-driven update requests, and the update being timed
+    this.updateCauses = [];
+    this.tracedUpdate = null;
     host.addController(this);
   }
 
@@ -19,11 +29,26 @@ class ObserverController {
     }
     this.disposers.clear();
     this.observed.clear();
+    if (this.tracedUpdate !== null) {
+      cancelViewUpdate(this.tracedUpdate);
+      this.tracedUpdate = null;
+    }
   }
 
   hostUpdate() {
     // Lit also updates disconnected elements; observing then would let the store retain the element
     if (this.host.isConnected) this.observeProperties();
+    // An update that threw never reached hostUpdated
+    if (this.tracedUpdate !== null) cancelViewUpdate(this.tracedUpdate);
+    this.tracedUpdate = beginViewUpdate(this.host, this.updateCauses);
+    // Requests made during this update schedule the next one
+    if (this.updateCauses.length > 0) this.updateCauses = [];
+  }
+
+  hostUpdated() {
+    if (this.tracedUpdate === null) return;
+    endViewUpdate(this.tracedUpdate, this.host);
+    this.tracedUpdate = null;
   }
 
   observeProperties() {
@@ -51,7 +76,13 @@ class ObserverController {
       );
     }
 
-    const callback = () => this.host.requestUpdate();
+    const callback = () => {
+      const span = beginSpan();
+      this.host.requestUpdate();
+      if (span === null) return;
+      endViewRequest(span, this.host, value, propName, options.throttle);
+      this.updateCauses.push(span.id);
+    };
     this.disposers.set(propName, observe(value, callback, options.throttle));
     this.observed.set(propName, value);
   }
